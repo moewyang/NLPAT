@@ -1,28 +1,19 @@
-# nlpat
+# nlpat - 自然语言处理标注工具
 
 > A tool application for nlp annotation.
+> 自然语言处理标注工具，包含了实体标注、实体链接标注和实体关系标注
 
 #### Build Setup
 
 ``` bash
 # install dependencies
-npm install
-
-# serve with hot reload at localhost:9080
-npm run dev
+yarn # or npm install
 
 # build electron application for production
-npm run build
-
-# run unit & end-to-end tests
-npm test
-
-
-# lint all JS/Vue component files in `src/`
-npm run lint
+yarn run dev # or npm run dev
 
 ```
 
 ---
 
-This project was generated with [electron-vue](https://github.com/SimulatedGREG/electron-vue)@[8fae476](https://github.com/SimulatedGREG/electron-vue/tree/8fae4763e9d225d3691b627e83b9e09b56f6c935) using [vue-cli](https://github.com/vuejs/vue-cli). Documentation about the original structure can be found [here](https://simulatedgreg.gitbooks.io/electron-vue/content/index.html).
+This project was generated with [electron-vue](https://github.com/SimulatedGREG/electron-vue)@[8fae476](https://github.com/SimulatedGREG/electron-vue/tree/8fae4763e9d225d3691b627e83b9e09b56f6c935) using [vue-cli](https://github.com/vuejs/vue-cli).
