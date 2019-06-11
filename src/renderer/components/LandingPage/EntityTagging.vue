@@ -6,7 +6,7 @@
       <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
       <div slot="tip" class="el-upload__tip">TIPS：只能上传json文件，且不超过500kb</div>
     </div>
-    <p>② 查看当前句子</p>
+    <p>② 查看和标注当前句子</p>
     <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curIndex" size="mini" :min="0" :max="listLen-1" controls-position="right"></el-input-number> / {{listLen - 1}}</div>
     <el-row class="block sen-block" id="sen-block">
       <el-col :span="2">
@@ -21,7 +21,7 @@
         <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
       </el-col>
     </el-row>
-    <p>③ 当前句子包含以下实体，请找出知识库中对应实体<span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('links') ? '已修改' : '未修改'}}）</span></p>
+    <p>③ 当前句子已标注以下实体</p>
     <el-form v-if="senList[curIndex]" class="block entity-block" ref="form" label-width="40px" label-position="left">
       <el-form-item v-for="(item, i) in senList[curIndex].entities" v-bind:key="i" :label="'【' + (i + 1) + '】'">
         <el-tag type="primary">{{ item.word }}</el-tag>
