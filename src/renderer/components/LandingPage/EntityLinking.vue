@@ -33,12 +33,12 @@
         </el-autocomplete>
       </el-form-item>
     </el-form>
-    <el-button type="primary" @click="onSubmit">更新</el-button>
-    <el-button @click="onDel">清除链接</el-button>
+    <el-button type="primary" @click="onSubmit">保存</el-button>
+    <el-button type="primary" @click="onSaveAs">另存为</el-button>
+    <el-button type="danger" @click="onDel">清除链接</el-button>
   </div>
 </template>
 <script>
-import { setInterval } from 'timers'
 const fs = require('fs')
 const readline = require('readline')
 export default {
@@ -77,7 +77,7 @@ export default {
     }
   },
   created () {
-    this.srcFilePath = '/Users/karezi/Desktop/修改后.json'
+    this.srcFilePath = '/Users/karezi/Desktop/entity-linking-test.json'
     if (this.srcFilePath) {
       this.readFileToArr(this.srcFilePath, this.readLineCallback)
     }
@@ -91,7 +91,17 @@ export default {
       Object.assign(this.senList[this.curIndex], {
         links
       })
-      this.$electron.ipcRenderer.send('save-file-dialog')
+      this.$electron.ipcRenderer.send('save-file', this.srcFilePath)
+    },
+    onSaveAs () {
+      console.log('onSaveAs')
+      var links = this.entities[this.curIndex].map((item) => {
+        return item.description
+      })
+      Object.assign(this.senList[this.curIndex], {
+        links
+      })
+      this.$electron.ipcRenderer.send('save-as-file-dialog')
     },
     onDel () {
       console.log('onDel')
@@ -231,33 +241,6 @@ export default {
       this.listLen = 0
       this.descriptions = []
       this.srcFilePath = ''
-    },
-    getSelectedContents () {
-      if (window.getSelection) {
-        // chrome,firefox,opera
-        if (window.getSelection().rangeCount < 1) {
-          return ''
-        }
-        let range = window.getSelection().getRangeAt(0)
-        let container = document.createElement('div')
-        container.appendChild(range.cloneContents())
-        return container.innerHTML
-        // return window.getSelection() //只复制文本
-      } else if (document.getSelection) {
-        // 其他
-        if (window.getSelection().rangeCount < 1) {
-          return
-        }
-        let range = window.getSelection().getRangeAt(0)
-        let container = document.createElement('div')
-        container.appendChild(range.cloneContents())
-        return container.innerHTML
-        // return document.getSelection(); //只复制文本
-      } else if (document.selection) {
-        // IE特有的
-        return document.selection.createRange().htmlText
-        // return document.selection.createRange().text //只复制文本
-      }
     }
   },
   mounted () {
@@ -277,9 +260,6 @@ export default {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
-    setInterval(() => {
-      // console.log(this.getSelectedContents())
-    }, 3000)
   }
 }
 </script>

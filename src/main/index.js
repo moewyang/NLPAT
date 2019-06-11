@@ -58,7 +58,7 @@ ipcMain.on('open-file-dialog', (event) => {
   })
 })
 
-ipcMain.on('save-file-dialog', (event) => {
+ipcMain.on('save-as-file-dialog', (event) => {
   dialog.showSaveDialog({
     filters: [{
       name: 'Json',
@@ -69,6 +69,23 @@ ipcMain.on('save-file-dialog', (event) => {
       event.sender.send('selected-save-file', path)
     }
   })
+})
+
+ipcMain.on('export-file-dialog', (event) => {
+  dialog.showSaveDialog({
+    filters: [{
+      name: 'txt',
+      extensions: ['txt']
+    }]
+  }, (path) => {
+    if (path) {
+      event.sender.send('export-save-file', path)
+    }
+  })
+})
+
+ipcMain.on('save-file', (event, path) => {
+  event.sender.send('selected-save-file', path)
 })
 
 ipcMain.on('show-message', (event, msg) => {
