@@ -60,8 +60,7 @@ export default {
     }
   },
   created () {
-    // this.srcFilePath = '/Users/karezi/Desktop/entity-relationship-test.json'
-    this.srcFilePath = '/Users/karezi/Desktop/entity-2.json'
+    this.srcFilePath = '/Users/karezi/Desktop/entity-relationship-test.json'
     if (this.srcFilePath) {
       this.readFileToArr(this.srcFilePath, this.readLineCallback)
     }
@@ -97,7 +96,7 @@ export default {
     },
     onDel () {
       console.log('onDel')
-      if (!this.senList[this.curIndex].hasOwnProperty('links')) {
+      if (!this.senList[this.curIndex].hasOwnProperty('relations')) {
         this.$electron.ipcRenderer.send('show-message', '无需清除')
         return
       } else {
