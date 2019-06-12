@@ -100,7 +100,7 @@ export default {
         this.$electron.ipcRenderer.send('show-message', '无需清除')
         return
       } else {
-        delete this.senList[this.curIndex].links
+        delete this.senList[this.curIndex].relations
       }
       this.$electron.ipcRenderer.send('save-file-dialog')
     },
