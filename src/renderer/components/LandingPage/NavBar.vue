@@ -19,7 +19,15 @@
   export default {
     data () {
       return {
-        activeIndex: '1'
+        activeIndex: 'home'
+      }
+    },
+    created () {
+      this.activeIndex = this.$route.path.substr(1)
+    },
+    watch: {
+      $route () {
+        this.activeIndex = this.$route.path.substr(1)
       }
     }
   }
