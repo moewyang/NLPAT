@@ -1,10 +1,11 @@
 <template>
-    <div class="entity-relationship-page">
+  <div class="entity-relationship-page">
+    <div class="tip" v-if="tip" v-html="tip"></div>
     <p>① 打开句子文件</p>
     <div class="block open-block">
-      <el-button size="mini" type="primary" @click="openFile">打开JSON文件</el-button>
+      <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
       <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
-      <div slot="tip" class="el-upload__tip">TIPS：只能上传json文件，且不超过500kb</div>
+      <!-- <div slot="tip" class="el-upload__tip">TIPS：只能上传na文件，且不超过500kb</div> -->
     </div>
     <p>② 查看当前句子</p>
     <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curIndex" size="mini" :min="0" :max="listLen-1" controls-position="right"></el-input-number> / {{listLen - 1}}</div>
@@ -56,14 +57,14 @@ export default {
       curIndex: 0,
       listLen: 0,
       relations: [],
-      entityPairs: []
+      entityPairs: [],
+      kgUrl: 'http://localhost:7474/db/data/transaction/commit',
+      kgAuthCode: 'bmVvNGo6MjA4MDI5OTE=',
+      tip: ''
     }
   },
   created () {
-    this.srcFilePath = '/Users/karezi/Desktop/entity-relationship-test.json'
-    if (this.srcFilePath) {
-      this.readFileToArr(this.srcFilePath, this.readLineCallback)
-    }
+    this.$electron.ipcRenderer.send('get-all-config')
   },
   methods: {
     onSubmit () {
@@ -149,8 +150,16 @@ export default {
       return senArr.join('')
     },
     runCypherQuery (query, params, callback) {
-      var httpUrlForTransaction = 'http://localhost:7474/db/data/transaction/commit'
-      this.$http.post(httpUrlForTransaction, {
+      var headers = {
+        'Accept': 'application/json; charset=UTF-8',
+        'Content-Type': 'application/json'
+      }
+      if (this.kgAuthCode) {
+        Object.assign(headers, {
+          'Authorization': 'Basic ' + this.kgAuthCode
+        })
+      }
+      this.$http.post(this.kgUrl, {
         statements: [
           {
             statement: query,
@@ -158,11 +167,7 @@ export default {
           }
         ]
       }, {
-        headers: {
-          'Accept': 'application/json; charset=UTF-8',
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic bmVvNGo6MjA4MDI5OTE='
-        }
+        headers
       }).then((response) => {
         callback(response)
       }).catch((error) => {
@@ -277,6 +282,22 @@ export default {
       fs.writeFile(path, output, () => {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
+    })
+    this.$electron.ipcRenderer.on('get-all-config-reply', (event, value) => {
+      if (value.hasOwnProperty('relationDefaultPath')) {
+        this.srcFilePath = value.relationDefaultPath
+        if (this.srcFilePath) {
+          this.readFileToArr(this.srcFilePath, this.readLineCallback)
+        }
+      }
+      if (value.hasOwnProperty('kgUrl')) {
+        this.kgUrl = value.kgUrl
+        if (value.hasOwnProperty('kgAuthCode')) {
+          this.kgAuthCode = value.kgAuthCode
+        }
+      } else {
+        this.tip = '⚠️请先在"<a style="color: #F56C6C" href="#/setting">配置</a>-远程KG配置"中设置KG地址'
+      }
     })
   }
 }

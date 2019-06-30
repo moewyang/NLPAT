@@ -3819,6 +3819,11 @@ electron-is-dev@^0.3.0:
   resolved "https://registry.yarnpkg.com/electron-is-dev/-/electron-is-dev-0.3.0.tgz#14e6fda5c68e9e4ecbeff9ccf037cbd7c05c5afe"
   integrity sha1-FOb9pcaOnk7L7/nM8DfL18BcWv4=
 
+electron-json-config@^1.5.3:
+  version "1.5.3"
+  resolved "https://registry.yarnpkg.com/electron-json-config/-/electron-json-config-1.5.3.tgz#92a878b608673412a822325b594d7005945b3a85"
+  integrity sha512-+nRzmoe9xlRZLABInTzSYPH5X1Z5bzHMoIPEMGvNGUGjHEBCoAR4n+iHYdC0vVOJjupJ4MpNLbtpo+vgCKN91A==
+
 electron-localshortcut@^3.0.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/electron-localshortcut/-/electron-localshortcut-3.1.0.tgz#10c1ffd537b8d39170aaf6e1551341f7780dd2ce"

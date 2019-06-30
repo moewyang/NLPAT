@@ -11,6 +11,7 @@
     <el-menu-item index="entity-tagging">实体标注</el-menu-item>
     <el-menu-item index="entity-linking">实体链接标注</el-menu-item>
     <el-menu-item index="entity-relationship">实体关系标注</el-menu-item>
+    <el-menu-item index="toolkit">其他工具集</el-menu-item>
     <el-menu-item index="setting">配置</el-menu-item>
     <el-menu-item index="about">关于</el-menu-item>
   </el-menu>

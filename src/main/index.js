@@ -1,6 +1,7 @@
 'use strict'
 
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+const config = require('electron-json-config')
 
 /**
  * Set `__static` path to static files in production
@@ -22,7 +23,10 @@ function createWindow () {
   mainWindow = new BrowserWindow({
     height: 800,
     useContentSize: true,
-    width: 1000
+    width: 1000,
+    webPreferences: {
+      webSecurity: false
+    }
   })
 
   mainWindow.maximize()
@@ -50,7 +54,11 @@ app.on('activate', () => {
 
 ipcMain.on('open-file-dialog', (event) => {
   dialog.showOpenDialog({
-    properties: ['openFile', 'openDirectory']
+    properties: ['openFile', 'openDirectory'],
+    filters: [{
+      name: 'NLPAT file type',
+      extensions: ['na']
+    }]
   }, (path) => {
     if (path) {
       event.sender.send('selected-open-file', path)
@@ -61,8 +69,8 @@ ipcMain.on('open-file-dialog', (event) => {
 ipcMain.on('save-as-file-dialog', (event) => {
   dialog.showSaveDialog({
     filters: [{
-      name: 'Json',
-      extensions: ['json']
+      name: 'NLPAT file type',
+      extensions: ['na']
     }]
   }, (path) => {
     if (path) {
@@ -94,6 +102,22 @@ ipcMain.on('show-message', (event, msg) => {
     type: 'error',
     message: msg
   })
+})
+
+ipcMain.on('set-config', (event, key, value) => {
+  config.set(key, value)
+})
+
+ipcMain.on('del-config', (event, key) => {
+  config.delete(key)
+})
+
+ipcMain.on('get-config', (event, key) => {
+  event.sender.send('get-config-reply', config.get(key))
+})
+
+ipcMain.on('get-all-config', (event) => {
+  event.sender.send('get-all-config-reply', config.all())
 })
 
 /**

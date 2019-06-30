@@ -2,9 +2,9 @@
   <div class="entity-tagging-page">
     <p>① 打开句子文件</p>
     <div class="block open-block">
-      <el-button size="mini" type="primary" @click="openFile">打开JSON文件</el-button>
+      <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
       <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
-      <div slot="tip" class="el-upload__tip">TIPS：只能上传json文件，且不超过500kb</div>
+      <!-- <div slot="tip" class="el-upload__tip">TIPS：只能上传na文件，且不超过500kb</div> -->
     </div>
     <p>② 查看和标注当前句子</p>
     <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curIndex" size="mini" :min="0" :max="listLen-1" controls-position="right"></el-input-number> / {{listLen - 1}}</div>
@@ -92,10 +92,7 @@ export default {
     }
   },
   created () {
-    this.srcFilePath = '/Users/karezi/Desktop/entity-tagging-test.json'
-    if (this.srcFilePath) {
-      this.readFileToArr(this.srcFilePath, this.readLineCallback)
-    }
+    this.$electron.ipcRenderer.send('get-all-config')
   },
   methods: {
     onSubmit () {
@@ -315,6 +312,14 @@ export default {
       fs.writeFile(path, this.exportStr, () => {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
+    })
+    this.$electron.ipcRenderer.on('get-all-config-reply', (event, value) => {
+      if (value.hasOwnProperty('tagDefaultPath')) {
+        this.srcFilePath = value.tagDefaultPath
+        if (this.srcFilePath) {
+          this.readFileToArr(this.srcFilePath, this.readLineCallback)
+        }
+      }
     })
   }
 }

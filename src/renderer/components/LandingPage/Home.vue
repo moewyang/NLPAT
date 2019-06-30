@@ -7,6 +7,8 @@
                 <li><router-link to='/entity-tagging'>实体标注</router-link></li>
                 <li><router-link to='/entity-linking'>实体链接标注</router-link></li>
                 <li><router-link to='/entity-relationship'>实体关系标注</router-link></li>
+                <li><router-link to='/toolkit'>其他工具集</router-link></li>
+                <li><router-link to='/setting'>配置</router-link></li>
             </ul>
         </div>
     </div>
