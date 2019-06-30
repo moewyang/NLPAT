@@ -24,6 +24,9 @@
     },
     created () {
       this.activeIndex = this.$route.path.substr(1)
+      if (!this.activeIndex) {
+        this.activeIndex = 'home'
+      }
     },
     watch: {
       $route () {
