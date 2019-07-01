@@ -2,24 +2,39 @@
   <div class="setting-page">
     <el-tabs type="card">
       <el-tab-pane label="默认文件路径">
-        <div class="tips">TIPS：只能上传.na文件，且不超过50MB</div>
-        <div class="block open-block" v-for="(item, i) in titleNames" v-bind:key="i">
-          <div class="title">{{ item }}默认文件路径：{{ srcFilePaths[i] ? srcFilePaths[i] : '未设置' }}</div>
-          <el-button size="mini" type="primary" @click="openFile(i)">设置</el-button>
-          <el-button size="mini" type="danger" @click="delPath(i)">清除</el-button>
-        </div>
+        <el-card shadow="always">
+          <div class="tips">TIPS：只能上传.na文件，且不超过50MB</div>
+          <div class="block open-block" v-for="(item, i) in titleNames" v-bind:key="i">
+            <div class="title">{{ item }}默认文件路径：{{ srcFilePaths[i] ? srcFilePaths[i] : '未设置' }}</div>
+            <el-button size="mini" type="primary" @click="openFile(i)">设置</el-button>
+            <el-button size="mini" type="danger" @click="delPath(i)">清除</el-button>
+          </div>
+        </el-card>
       </el-tab-pane>
       <el-tab-pane label="远程KG配置">
-        <div class="tips">TIPS：作为<el-link type="primary" @click="open('https://www.aclweb.org/anthology/P09-1113')">远程监督</el-link>实体链接标注和实体关系标注的，目前只支持<el-link type="primary" @click="open('https://neo4j.com/')">Neo4j</el-link></div>
-        <el-form class="block open-block" ref="form" :model="form" label-width="120px" label-position="left">
-          <el-form-item label="URL">
-            <el-input v-model="form.url" clearable></el-input>
-          </el-form-item>
-          <el-form-item label="AUTHCODE*">
-            <el-input v-model="form.authCode" clearable></el-input>
-          </el-form-item>
-        </el-form>
-        <el-button type="primary" @click="onSet">设置</el-button>
+        <el-card shadow="always">
+          <div class="tips">TIPS：作为<el-link type="primary" @click="open('https://www.aclweb.org/anthology/P09-1113')">远程监督</el-link>实体链接标注和实体关系标注的，目前只支持<el-link type="primary" @click="open('https://neo4j.com/')">Neo4j</el-link></div>
+          <el-form class="block open-block" ref="form" :model="form" label-width="120px" label-position="left">
+            <el-form-item label="URL">
+              <el-input v-model="form.url" clearable></el-input>
+            </el-form-item>
+            <el-form-item label="AUTHCODE*">
+              <el-input v-model="form.authCode" clearable></el-input>
+            </el-form-item>
+          </el-form>
+          <el-button type="primary" @click="onSet">设置</el-button>
+        </el-card>
+      </el-tab-pane>
+      <el-tab-pane label="实体标注类型">
+        <el-card shadow="always">
+          <div>默认标注类型参照CoNLL2003，实体被标注为四种类型：</div>
+          <div>
+            <p>LOC (location, 地名)</p>
+            <p>ORG (organisation， 组织机构名)</p>
+            <p>PER （person， 人名）</p>
+            <p>MISC (miscellaneous， 其他)</p>
+          </div>
+        </el-card>
       </el-tab-pane>
     </el-tabs>
   </div>

@@ -1,50 +1,65 @@
 <template>
   <div class="entity-tagging-page">
-    <p>① 打开句子文件</p>
-    <div class="block open-block">
-      <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
-      <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
-      <!-- <div slot="tip" class="el-upload__tip">TIPS：只能上传na文件，且不超过500kb</div> -->
-    </div>
-    <p>② 查看和标注当前句子</p>
-    <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curIndex" size="mini" :min="0" :max="listLen-1" controls-position="right"></el-input-number> / {{listLen - 1}}</div>
-    <el-row class="block sen-block" id="sen-block">
-      <el-col :span="2">
-        <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
-      </el-col>
-      <el-col class="sen-wrapper" :span="20">
-        <el-input type="text" v-if="isEdit && senList[curIndex]" class="sen" v-html="senList[curIndex].string" @mouseup.native="getSelectedContents" @mouseleave.native="isEdit = false"></el-input>
-        <el-input type="text" v-else-if="!isEdit && senList[curIndex]" class="sen" v-html="color(senList[curIndex].string)" @mouseenter.native="isEdit = true"></el-input>
-        <div v-else class="sen">暂无内容</div>
-      </el-col>
-      <el-col :span="2">
-        <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
-      </el-col>
-    </el-row>
-    <p>③ 当前句子已标注以下实体</p>
-    <el-form v-if="senList[curIndex]" class="block entity-block" ref="form" label-width="40px" label-position="left">
-      <el-form-item v-for="(item, i) in senList[curIndex].entities" v-bind:key="i" :label="'【' + (i + 1) + '】'">
-        <el-tag type="primary">{{ item.word }}</el-tag>
-        <el-select size="small" v-model="item.type" placeholder="请选择">
-          <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
-        </el-select>
-        <el-button size="small" type="danger" icon="el-icon-close" circle @click="onDelEntity(i)"></el-button>
-      </el-form-item>
-    </el-form>
-    <el-button type="primary" @click="onSubmit">保存</el-button>
-    <el-button type="primary" @click="onSaveAs">另存为</el-button>
-    <el-button type="success" @click="exportDialogVisible = true">导出</el-button>
-    <el-dialog title="导出选项" :visible.sync="exportDialogVisible" width="30%" center>
-      <div class="export-block">
-        <el-select class="export-select" v-model="exportType" placeholder="请选择">
-          <el-option v-for="item in exportTypeOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
-        </el-select>
+    <el-card shadow="always">
+      <p>① 打开句子文件</p>
+      <div class="block open-block">
+        <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
+        <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
+        <!-- <div slot="tip" class="el-upload__tip">TIPS：只能上传na文件，且不超过500kb</div> -->
       </div>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="exportDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="onExport">确 定</el-button>
-      </span>
-    </el-dialog>
+    </el-card>
+    <br>
+    <el-card shadow="always">
+      <p>② 查看和标注当前句子</p>
+      <el-row>
+        <el-col :span="6">
+          <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> / {{listLen}}</div>
+        </el-col>
+        <el-col :span="6" style="line-height: 2.6em">
+          <el-button size="mini" type="warning" @click="aiAssist">智能协助</el-button>
+        </el-col>
+      </el-row>
+      <el-row class="block sen-block" id="sen-block">
+        <el-col :span="2">
+          <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
+        </el-col>
+        <el-col class="sen-wrapper" :span="20">
+          <el-input type="text" v-if="isEdit && senList[curIndex]" class="sen" v-html="senList[curIndex].string" @mouseup.native="getSelectedContents" @mouseleave.native="isEdit = false"></el-input>
+          <el-input type="text" v-else-if="!isEdit && senList[curIndex]" class="sen" v-html="color(senList[curIndex].string)" @mouseenter.native="isEdit = true"></el-input>
+          <div v-else class="sen">暂无内容</div>
+        </el-col>
+        <el-col :span="2">
+          <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
+        </el-col>
+      </el-row>
+    </el-card>
+    <br>
+    <el-card shadow="always">
+      <p>③ 当前句子已标注以下实体</p>
+      <el-form v-if="senList[curIndex]" class="block entity-block" ref="form" label-width="40px" label-position="left">
+        <el-form-item v-for="(item, i) in senList[curIndex].entities" v-bind:key="i" :label="'【' + (i + 1) + '】'">
+          <el-tag type="primary">{{ item.word }}</el-tag>
+          <el-select size="small" v-model="item.type" placeholder="请选择">
+            <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+          </el-select>
+          <el-button size="small" type="danger" icon="el-icon-close" circle @click="onDelEntity(i)"></el-button>
+        </el-form-item>
+      </el-form>
+      <el-button size="mini" type="primary" @click="onSubmit">保存</el-button>
+      <el-button size="mini" type="primary" @click="onSaveAs">另存为</el-button>
+      <el-button size="mini" type="success" @click="exportDialogVisible = true">导出</el-button>
+      <el-dialog title="导出选项" :visible.sync="exportDialogVisible" width="30%" center>
+        <div class="export-block">
+          <el-select class="export-select" v-model="exportType" placeholder="请选择">
+            <el-option v-for="item in exportTypeOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+          </el-select>
+        </div>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="exportDialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="onExport">确 定</el-button>
+        </span>
+      </el-dialog>
+    </el-card>
   </div>
 </template>
 <script>
@@ -88,13 +103,25 @@ export default {
         label: 'BMEWO'
       }],
       exportStr: '',
-      seperate: '\t'
+      seperate: '\t',
+      curNum: 1
+    }
+  },
+  watch: {
+    curIndex () {
+      this.curNum = this.curIndex + 1
+    },
+    curNum () {
+      this.curIndex = this.curNum - 1
     }
   },
   created () {
     this.$electron.ipcRenderer.send('get-all-config')
   },
   methods: {
+    aiAssist () {
+      console.log('aiAssist')
+    },
     onSubmit () {
       console.log('onSubmit')
       this.$electron.ipcRenderer.send('save-file', this.srcFilePath)
@@ -213,7 +240,11 @@ export default {
         senArr[startIndexList[i]] = '<div class="el-badge item"><sup class="el-badge__content el-badge__content--primary is-fixed">' + (i + 1) + '</sup><span style=\'background-color: rgb(216, 236, 255)\'>' + senArr[startIndexList[i]]
       }
       for (var j = 0; j < endIndexList.length; j++) {
-        senArr[endIndexList[j]] = '</span></div>&nbsp;&nbsp;&nbsp;&nbsp;' + senArr[endIndexList[j]]
+        if (senArr[endIndexList[j]] !== undefined) {
+          senArr[endIndexList[j]] = '</span></div>&nbsp;&nbsp;&nbsp;&nbsp;' + senArr[endIndexList[j]]
+        } else {
+          senArr[endIndexList[j]] = '</span></div>'
+        }
       }
       return senArr.join('')
     },
@@ -226,6 +257,7 @@ export default {
     resetPage () {
       this.curIndex = 0
       this.listLen = 0
+      this.senList = []
       this.srcFilePath = ''
     },
     getSelectedContents () {
@@ -351,12 +383,16 @@ export default {
     .sen-btn {
       margin-top: 10px;
     }
+    .sen-ai {
+      text-align: center;
+      margin-top: 70px;
+    }
   }
   .entity-block {
     border: 1px solid #EEE;
     border-radius: 10px;
     padding: 20px;
-    height: 20vw;
+    height: 14vw;
     overflow-y: auto;
     .entity-auto-complete {
       width: 85%;

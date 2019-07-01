@@ -2,87 +2,123 @@
   <div class="setting-page">
     <el-tabs type="card" v-model="activeName" @tab-click="handleTabClick">
       <el-tab-pane label="文件格式转化" name="tab-1">
-        <div class="tips">TIPS：将不同格式的文件转为.na格式的文件，na格式文件的介绍见"<a style="color: black" href="#/about">关于</a>-NA格式文件介绍"</div>
+        <el-card shadow="always">
+          <div class="tips">TIPS：将不同格式的文件转为.na格式的文件，na格式文件的介绍见"<a style="color: black" href="#/about">关于</a>-NA格式文件介绍"</div>
+          <el-form ref="form1" :model="form1" label-width="80px" label-position="left">
+            <el-form-item label="文件格式">
+              <el-radio-group v-model="form1.type">
+                <el-radio label="txt">一句话一行的文本</el-radio>
+                <el-radio label="io">IO</el-radio>
+                <el-radio label="bio">BIO</el-radio>
+                <el-radio label="bioes">BIOES</el-radio>
+                <el-radio label="bmewo">BMEWO</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="文件地址">
+              <el-button size="mini" type="primary" @click="openFile">打开文件</el-button>
+              <span v-if="waitSwitchFilePath" class="el-upload__tip">当前打开文件路径：{{ waitSwitchFilePath }}</span>
+            </el-form-item>
+            <el-form-item v-if="waitSwitchFilePath">
+              <el-button size="mini" type="success" @click="onSwitch">转换</el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
       </el-tab-pane>
       <el-tab-pane label="实体搜索" name="tab-2">
-        <el-form :inline="true" ref="form2" :model="form2" label-width="80px" label-position="left">
-          <el-form-item label="查询类型">
-            <el-radio-group v-model="form2.type">
-              <el-radio label="name">名称</el-radio>
-              <el-radio label="id">ID</el-radio>
-            </el-radio-group>
-          </el-form-item>
-          <el-form-item label="查询值">
-            <el-input v-model="form2.content"></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="onSubmit">查询</el-button>
-          </el-form-item>
-        </el-form>
-        <p>结果</p>
-        <div el-input type="text" v-html="nlpResult"></div>
+        <el-card shadow="always">
+          <el-form :inline="true" ref="form2" :model="form2" label-width="80px" label-position="left">
+            <el-form-item label="查询类型">
+              <el-radio-group v-model="form2.type">
+                <el-radio label="name">名称</el-radio>
+                <el-radio label="id">ID</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="查询值">
+              <el-input v-model="form2.content"></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="onSubmit">查询</el-button>
+            </el-form-item>
+          </el-form>
+          <p>结果</p>
+          <div el-input type="text" v-html="nlpResult"></div>
+        </el-card>
       </el-tab-pane>
       <el-tab-pane label="中文问答" name="tab-3">
-        <el-form :inline="true" ref="form3" :model="form3" label-position="left">
-          <el-form-item label="">
-            <el-input v-model="form3.content" style="width: 600px"></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="onSubmit">提问</el-button>
-          </el-form-item>
-        </el-form>
-        <p>结果</p>
-        <div el-input type="text" v-html="nlpResult"></div>
+        <el-card shadow="always">
+          <el-form :inline="true" ref="form3" :model="form3" label-position="left">
+            <el-form-item label="">
+              <el-input v-model="form3.content" style="width: 600px"></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="onSubmit">提问</el-button>
+            </el-form-item>
+          </el-form>
+          <p>结果</p>
+          <div el-input type="text" v-html="nlpResult"></div>
+        </el-card>
       </el-tab-pane>
       <el-tab-pane label="分词/词性标注/实体识别/链接" name="tab-4">
-        <div class="toolkit-page">
-          <p>① 打开句子文件</p>
-          <div class="block open-block">
-            <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
-            <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
+        <el-card shadow="always">
+          <div class="toolkit-page">
+            <p>① 打开句子文件</p>
+            <div class="block open-block">
+              <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
+              <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
+            </div>
+            <p>② 查看句子</p>
+            <el-row>
+              <el-col :span="6">
+                <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> / {{listLen}}</div>
+              </el-col>
+            </el-row>
+            <el-row class="block sen-block" id="sen-block">
+              <el-col :span="2">
+                <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
+              </el-col>
+              <el-col class="sen-wrapper" :span="20">
+                <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="senList[curIndex].string"></el-input>
+                <div v-else class="sen">暂无内容</div>
+              </el-col>
+              <el-col :span="2">
+                <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
+              </el-col>
+            </el-row>
+            <p>③ 识别结果</p>
+            <div el-input type="text" v-html="nlpResult"></div>
           </div>
-          <p>② 查看句子</p>
-          <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curIndex" size="mini" :min="0" :max="listLen-1" controls-position="right"></el-input-number> / {{listLen - 1}}</div>
-          <el-row class="block sen-block" id="sen-block">
-            <el-col :span="2">
-              <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
-            </el-col>
-            <el-col class="sen-wrapper" :span="20">
-              <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="senList[curIndex].string"></el-input>
-              <div v-else class="sen">暂无内容</div>
-            </el-col>
-            <el-col :span="2">
-              <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
-            </el-col>
-          </el-row>
-          <p>③ 识别结果</p>
-          <div el-input type="text" v-html="nlpResult"></div>
-        </div>
+        </el-card>
       </el-tab-pane>
       <el-tab-pane label="信息抽取" name="tab-5">
-        <div class="toolkit-page">
-          <p>① 打开句子文件</p>
-          <div class="block open-block">
-            <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
-            <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
+        <el-card shadow="always">
+          <div class="toolkit-page">
+            <p>① 打开句子文件</p>
+            <div class="block open-block">
+              <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
+              <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
+            </div>
+            <p>② 查看句子</p>
+            <el-row>
+              <el-col :span="6">
+                <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> / {{listLen}}</div>
+              </el-col>
+            </el-row>
+            <el-row class="block sen-block" id="sen-block">
+              <el-col :span="2">
+                <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
+              </el-col>
+              <el-col class="sen-wrapper" :span="20">
+                <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="senList[curIndex].string"></el-input>
+                <div v-else class="sen">暂无内容</div>
+              </el-col>
+              <el-col :span="2">
+                <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
+              </el-col>
+            </el-row>
+            <p>③ 识别结果</p>
+            <div el-input type="text" v-html="nlpResult"></div>
           </div>
-          <p>② 查看句子</p>
-          <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curIndex" size="mini" :min="0" :max="listLen-1" controls-position="right"></el-input-number> / {{listLen - 1}}</div>
-          <el-row class="block sen-block" id="sen-block">
-            <el-col :span="2">
-              <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
-            </el-col>
-            <el-col class="sen-wrapper" :span="20">
-              <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="senList[curIndex].string"></el-input>
-              <div v-else class="sen">暂无内容</div>
-            </el-col>
-            <el-col :span="2">
-              <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
-            </el-col>
-          </el-row>
-          <p>③ 识别结果</p>
-          <div el-input type="text" v-html="nlpResult"></div>
-        </div>
+        </el-card>
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -94,10 +130,15 @@ export default {
   data () {
     return {
       srcFilePath: '',
+      waitSwitchFilePath: '',
       showError: false,
       senList: [],
       curIndex: 0,
       listLen: 0,
+      concatStr: '',
+      form1: {
+        type: 'txt'
+      },
       form2: {
         content: '中国',
         type: 'name'
@@ -107,7 +148,8 @@ export default {
       },
       nlpResult: '',
       activeName: 'tab-1',
-      actkgUrl: 'http://www.actkg.com'
+      actkgUrl: 'http://www.actkg.com',
+      curNum: 1
     }
   },
   created () {
@@ -118,10 +160,35 @@ export default {
       this.query()
     },
     curIndex () {
+      this.curNum = this.curIndex + 1
       this.query()
+    },
+    curNum () {
+      this.curIndex = this.curNum - 1
     }
   },
   methods: {
+    onSwitch () {
+      this.concatStr = ''
+      if (this.activeName === 'tab-1') {
+        this.readFileToArr(this.waitSwitchFilePath, (data) => {
+          if (this.form1.type === 'txt') {
+            this.concatStr = data.map((item) => {
+              return '{"string":"' + item + '","entities":[],"links":[],"relations":[]}'
+            }).join('\n')
+            this.$electron.ipcRenderer.send('save-as-file-dialog')
+          } else if (this.form1.type === 'io') {
+            console.log('io')
+          } else if (this.form1.type === 'bio') {
+            console.log('bio')
+          } else if (this.form1.type === 'bioes') {
+            console.log('bioes')
+          } else if (this.form1.type === 'bmewo') {
+            console.log('bmewo')
+          }
+        })
+      }
+    },
     onSubmit () {
       this.nlpResult = ''
       if (this.activeName === 'tab-2' && this.form2.type && this.form2.content) {
@@ -211,8 +278,12 @@ export default {
       this.nlpResult = ''
     },
     openFile () {
-      console.log('open-file-dialog')
-      this.$electron.ipcRenderer.send('open-file-dialog')
+      console.log('open-file')
+      if (this.activeName === 'tab-1') {
+        this.$electron.ipcRenderer.send('open-file-dialog-all-type')
+      } else {
+        this.$electron.ipcRenderer.send('open-file-dialog')
+      }
     },
     readFileToArr: (fReadName, callback) => {
       var fRead = fs.createReadStream(fReadName)
@@ -246,6 +317,7 @@ export default {
     resetPage () {
       this.curIndex = 0
       this.listLen = 0
+      this.senList = []
       this.srcFilePath = ''
     }
   },
@@ -253,8 +325,19 @@ export default {
     this.$electron.ipcRenderer.on('selected-open-file', (event, path) => {
       // const name = path[0].slice(path[0].lastIndexOf('/') + 1)
       this.resetPage()
-      this.srcFilePath = path[0]
-      this.readFileToArr(path[0], this.readLineCallback)
+      if (this.activeName !== 'tab-1') {
+        this.srcFilePath = path[0]
+        this.readFileToArr(path[0], this.readLineCallback)
+      } else {
+        this.waitSwitchFilePath = path[0]
+      }
+    })
+    this.$electron.ipcRenderer.on('selected-save-file', (event, path) => {
+      console.log('save to:' + path)
+      var that = this
+      fs.writeFile(path, this.concatStr, () => {
+        that.$electron.ipcRenderer.send('show-message', '转换成功')
+      })
     })
     this.$electron.ipcRenderer.on('get-all-config-reply', (event, value) => {
       if (value.hasOwnProperty('toolkitDefaultPath')) {

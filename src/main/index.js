@@ -56,8 +56,22 @@ ipcMain.on('open-file-dialog', (event) => {
   dialog.showOpenDialog({
     properties: ['openFile', 'openDirectory'],
     filters: [{
-      name: 'NLPAT file type',
+      name: 'NLPAT File Type',
       extensions: ['na']
+    }]
+  }, (path) => {
+    if (path) {
+      event.sender.send('selected-open-file', path)
+    }
+  })
+})
+
+ipcMain.on('open-file-dialog-all-type', (event) => {
+  dialog.showOpenDialog({
+    properties: ['openFile', 'openDirectory'],
+    filters: [{
+      name: 'All Files',
+      extensions: ['*']
     }]
   }, (path) => {
     if (path) {
@@ -69,7 +83,7 @@ ipcMain.on('open-file-dialog', (event) => {
 ipcMain.on('save-as-file-dialog', (event) => {
   dialog.showSaveDialog({
     filters: [{
-      name: 'NLPAT file type',
+      name: 'NLPAT File Type',
       extensions: ['na']
     }]
   }, (path) => {
@@ -82,8 +96,8 @@ ipcMain.on('save-as-file-dialog', (event) => {
 ipcMain.on('export-file-dialog', (event) => {
   dialog.showSaveDialog({
     filters: [{
-      name: 'txt',
-      extensions: ['txt']
+      name: 'Txt',
+      extensions: ['']
     }]
   }, (path) => {
     if (path) {
