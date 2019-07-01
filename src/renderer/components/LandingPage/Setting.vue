@@ -44,6 +44,7 @@ const shell = require('electron').shell
 export default {
   data () {
     return {
+      modelName: 'setting',
       srcFilePaths: ['', '', '', ''],
       configNames: ['tagDefaultPath', 'linkingDefaultPath', 'relationDefaultPath', 'toolkitDefaultPath'],
       titleNames: ['实体标注', '实体链接标注', '实体关系标注', '其他工具集'],
@@ -55,13 +56,13 @@ export default {
     }
   },
   created () {
-    this.$electron.ipcRenderer.send('get-all-config', 'setting')
+    this.$electron.ipcRenderer.send('get-all-config', this.modelName)
   },
   methods: {
     openFile: function (index) {
       console.log('open-file-dialog')
       this.cIndex = index
-      this.$electron.ipcRenderer.send('open-file-dialog', 'setting')
+      this.$electron.ipcRenderer.send('open-file-dialog', this.modelName)
     },
     delPath: function (index) {
       this.$electron.ipcRenderer.send('del-config', this.configNames[index])
@@ -76,11 +77,11 @@ export default {
     }
   },
   mounted () {
-    this.$electron.ipcRenderer.on('selected-open-file-setting', (event, path) => {
+    this.$electron.ipcRenderer.on('selected-open-file-' + this.modelName, (event, path) => {
       this.srcFilePaths.splice(this.cIndex, 1, path[0])
       this.$electron.ipcRenderer.send('set-config', this.configNames[this.cIndex], path[0])
     })
-    this.$electron.ipcRenderer.on('get-all-config-reply-setting', (event, value) => {
+    this.$electron.ipcRenderer.on('get-all-config-reply-' + this.modelName, (event, value) => {
       if (value.hasOwnProperty('tagDefaultPath')) {
         this.srcFilePaths.splice(0, 1, value.tagDefaultPath)
       }

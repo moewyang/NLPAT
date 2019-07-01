@@ -68,6 +68,7 @@ const readline = require('readline')
 export default {
   data () {
     return {
+      modelName: 'tag',
       srcFilePath: '',
       showError: false,
       senList: [],
@@ -116,7 +117,7 @@ export default {
     }
   },
   created () {
-    this.$electron.ipcRenderer.send('get-all-config', 'tag')
+    this.$electron.ipcRenderer.send('get-all-config', this.modelName)
   },
   methods: {
     aiAssist () {
@@ -124,11 +125,11 @@ export default {
     },
     onSubmit () {
       console.log('onSubmit')
-      this.$electron.ipcRenderer.send('save-file', this.srcFilePath, 'tag')
+      this.$electron.ipcRenderer.send('save-file', this.srcFilePath, this.modelName)
     },
     onSaveAs () {
       console.log('onSaveAs')
-      this.$electron.ipcRenderer.send('save-as-file-dialog', 'tag')
+      this.$electron.ipcRenderer.send('save-as-file-dialog', this.modelName)
     },
     onExport () {
       console.log('onExport')
@@ -194,7 +195,7 @@ export default {
         }).join('\n')
       }).join('\n\n')
       this.exportDialogVisible = false
-      this.$electron.ipcRenderer.send('export-file-dialog', 'tag')
+      this.$electron.ipcRenderer.send('export-file-dialog', this.modelName)
     },
     onDelEntity (i) {
       console.log('onDelEntity')
@@ -202,7 +203,7 @@ export default {
     },
     openFile: function () {
       console.log('open-file-dialog')
-      this.$electron.ipcRenderer.send('open-file-dialog', 'tag')
+      this.$electron.ipcRenderer.send('open-file-dialog', this.modelName)
     },
     readFileToArr: (fReadName, callback) => {
       var fRead = fs.createReadStream(fReadName)
@@ -322,13 +323,13 @@ export default {
     }
   },
   mounted () {
-    this.$electron.ipcRenderer.on('selected-open-file-tag', (event, path) => {
+    this.$electron.ipcRenderer.on('selected-open-file-' + this.modelName, (event, path) => {
       // const name = path[0].slice(path[0].lastIndexOf('/') + 1)
       this.resetPage()
       this.srcFilePath = path[0]
       this.readFileToArr(path[0], this.readLineCallback)
     })
-    this.$electron.ipcRenderer.on('direct-save-file-tag', (event, path) => {
+    this.$electron.ipcRenderer.on('direct-save-file-' + this.modelName, (event, path) => {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
@@ -338,7 +339,7 @@ export default {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
-    this.$electron.ipcRenderer.on('selected-save-file-tag', (event, path) => {
+    this.$electron.ipcRenderer.on('selected-save-file-' + this.modelName, (event, path) => {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
@@ -348,14 +349,14 @@ export default {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
-    this.$electron.ipcRenderer.on('export-save-file-tag', (event, path) => {
+    this.$electron.ipcRenderer.on('export-save-file-' + this.modelName, (event, path) => {
       console.log('save to:' + path)
       var that = this
       fs.writeFile(path, this.exportStr, () => {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
-    this.$electron.ipcRenderer.on('get-all-config-reply-tag', (event, value) => {
+    this.$electron.ipcRenderer.on('get-all-config-reply-' + this.modelName, (event, value) => {
       if (value.hasOwnProperty('tagDefaultPath')) {
         this.srcFilePath = value.tagDefaultPath
         if (this.srcFilePath) {

@@ -63,6 +63,7 @@ const readline = require('readline')
 export default {
   data () {
     return {
+      modelName: 'relation',
       srcFilePath: '',
       dragover: false,
       progress: 0,
@@ -88,7 +89,7 @@ export default {
     }
   },
   created () {
-    this.$electron.ipcRenderer.send('get-all-config', 'relation')
+    this.$electron.ipcRenderer.send('get-all-config', this.modelName)
   },
   methods: {
     aiAssist () {
@@ -106,7 +107,7 @@ export default {
       Object.assign(this.senList[this.curIndex], {
         relations
       })
-      this.$electron.ipcRenderer.send('save-file', this.srcFilePath, 'relation')
+      this.$electron.ipcRenderer.send('save-file', this.srcFilePath, this.modelName)
     },
     onSaveAs () {
       console.log('onSaveAs')
@@ -120,7 +121,7 @@ export default {
       Object.assign(this.senList[this.curIndex], {
         relations
       })
-      this.$electron.ipcRenderer.send('save-as-file-dialog', 'linking')
+      this.$electron.ipcRenderer.send('save-as-file-dialog', this.modelName)
     },
     onDel () {
       console.log('onDel')
@@ -130,11 +131,11 @@ export default {
       } else {
         delete this.senList[this.curIndex].relations
       }
-      this.$electron.ipcRenderer.send('save-file-dialog', 'relation')
+      this.$electron.ipcRenderer.send('save-file-dialog', this.modelName)
     },
     openFile: function () {
       console.log('open-file-dialog')
-      this.$electron.ipcRenderer.send('open-file-dialog', 'relation')
+      this.$electron.ipcRenderer.send('open-file-dialog', this.modelName)
     },
     readFileToArr: (fReadName, callback) => {
       var fRead = fs.createReadStream(fReadName)
@@ -300,13 +301,13 @@ export default {
     }
   },
   mounted () {
-    this.$electron.ipcRenderer.on('selected-open-file-relation', (event, path) => {
+    this.$electron.ipcRenderer.on('selected-open-file-' + this.modelName, (event, path) => {
       // const name = path[0].slice(path[0].lastIndexOf('/') + 1)
       this.resetPage()
       this.srcFilePath = path[0]
       this.readFileToArr(path[0], this.readLineCallback)
     })
-    this.$electron.ipcRenderer.on('direct-save-file-relation', (event, path) => {
+    this.$electron.ipcRenderer.on('direct-save-file-' + this.modelName, (event, path) => {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
@@ -316,7 +317,7 @@ export default {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
-    this.$electron.ipcRenderer.on('selected-save-file-relation', (event, path) => {
+    this.$electron.ipcRenderer.on('selected-save-file-' + this.modelName, (event, path) => {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
@@ -326,7 +327,7 @@ export default {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
-    this.$electron.ipcRenderer.on('get-all-config-reply-relation', (event, value) => {
+    this.$electron.ipcRenderer.on('get-all-config-reply-' + this.modelName, (event, value) => {
       if (value.hasOwnProperty('relationDefaultPath')) {
         this.srcFilePath = value.relationDefaultPath
         if (this.srcFilePath) {
