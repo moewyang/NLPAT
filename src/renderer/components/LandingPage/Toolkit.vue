@@ -5,8 +5,34 @@
         <div class="tips">TIPS：将不同格式的文件转为.na格式的文件，na格式文件的介绍见"<a style="color: black" href="#/about">关于</a>-NA格式文件介绍"</div>
       </el-tab-pane>
       <el-tab-pane label="实体搜索" name="tab-2">
+        <el-form :inline="true" ref="form2" :model="form2" label-width="80px" label-position="left">
+          <el-form-item label="查询类型">
+            <el-radio-group v-model="form2.type">
+              <el-radio label="name">名称</el-radio>
+              <el-radio label="id">ID</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="查询值">
+            <el-input v-model="form2.content"></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="onSubmit">查询</el-button>
+          </el-form-item>
+        </el-form>
+        <p>结果</p>
+        <div el-input type="text" v-html="nlpResult"></div>
       </el-tab-pane>
       <el-tab-pane label="中文问答" name="tab-3">
+        <el-form :inline="true" ref="form3" :model="form3" label-position="left">
+          <el-form-item label="">
+            <el-input v-model="form3.content" style="width: 600px"></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="onSubmit">提问</el-button>
+          </el-form-item>
+        </el-form>
+        <p>结果</p>
+        <div el-input type="text" v-html="nlpResult"></div>
       </el-tab-pane>
       <el-tab-pane label="分词/词性标注/实体识别/链接" name="tab-4">
         <div class="toolkit-page">
@@ -72,6 +98,13 @@ export default {
       senList: [],
       curIndex: 0,
       listLen: 0,
+      form2: {
+        content: '中国',
+        type: 'name'
+      },
+      form3: {
+        content: '清华大学的现任校长是哪个学校毕业的'
+      },
       nlpResult: '',
       activeName: 'tab-1',
       actkgUrl: 'http://www.actkg.com'
@@ -89,6 +122,55 @@ export default {
     }
   },
   methods: {
+    onSubmit () {
+      this.nlpResult = ''
+      if (this.activeName === 'tab-2' && this.form2.type && this.form2.content) {
+        this.$http.get(this.actkgUrl + '/api/graph/entity/?autopick=false&' + this.form2.type + '=' + this.form2.content).then((response) => {
+          var res = JSON.parse(JSON.stringify(response))
+          console.log(res)
+          if (res.status === 200) {
+            if (this.form2.type === 'name') {
+              for (var i in res.data) {
+                this.nlpResult += '<p>可能实体' + (parseInt(i) + 1) + '：</p>'
+                for (var key in res.data[i]) {
+                  var value = res.data[i][key]
+                  this.nlpResult += '<p>' + key + '：' + value + '</p>'
+                }
+                this.nlpResult += '<br>'
+              }
+            } else {
+              for (var key2 in res.data) {
+                var value2 = res.data[key2]
+                this.nlpResult += '<p>' + key2 + '：' + value2 + '</p>'
+              }
+            }
+          } else {
+            this.nlpResult = '网络错误'
+          }
+        }).catch((error) => {
+          this.nlpResult = JSON.stringify(error)
+        })
+      } else if (this.activeName === 'tab-3' && this.form3.content) {
+        this.$http.get(this.actkgUrl + '/api/graph/qa/?q=' + this.form3.content).then((response) => {
+          var res = JSON.parse(JSON.stringify(response))
+          console.log(res)
+          if (res.status === 200) {
+            this.nlpResult += '<p>回答：' + res.data.answer + '</p>'
+            if (res.data.triples && res.data.triples.length !== 0) {
+              this.nlpResult += '<br><p>涉及的三元组有：</p>'
+              for (var i in res.data.triples) {
+                var item = res.data.triples[i]
+                this.nlpResult += '<p>[' + item[0].neoId + '/' + item[0].label + ']' + item[0].name + '-' + item[1] + '-[' + item[2].neoId + '/' + item[2].label + ']' + item[2].name + '</p>'
+              }
+            }
+          } else {
+            this.nlpResult = '网络错误'
+          }
+        }).catch((error) => {
+          this.nlpResult = JSON.stringify(error)
+        })
+      }
+    },
     query () {
       this.nlpResult = ''
       if (this.activeName === 'tab-4') {
@@ -126,6 +208,7 @@ export default {
     },
     handleTabClick () {
       this.curIndex = 0
+      this.nlpResult = ''
     },
     openFile () {
       console.log('open-file-dialog')
