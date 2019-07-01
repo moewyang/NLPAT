@@ -153,7 +153,7 @@ export default {
     }
   },
   created () {
-    this.$electron.ipcRenderer.send('get-all-config')
+    this.$electron.ipcRenderer.send('get-all-config', 'toolkit')
   },
   watch: {
     activeName () {
@@ -176,7 +176,7 @@ export default {
             this.concatStr = data.map((item) => {
               return '{"string":"' + item + '","entities":[],"links":[],"relations":[]}'
             }).join('\n')
-            this.$electron.ipcRenderer.send('save-as-file-dialog')
+            this.$electron.ipcRenderer.send('save-as-file-dialog', 'linking')
           } else if (this.form1.type === 'io') {
             console.log('io')
           } else if (this.form1.type === 'bio') {
@@ -280,9 +280,9 @@ export default {
     openFile () {
       console.log('open-file')
       if (this.activeName === 'tab-1') {
-        this.$electron.ipcRenderer.send('open-file-dialog-all-type')
+        this.$electron.ipcRenderer.send('open-file-dialog-all-type', 'toolkit')
       } else {
-        this.$electron.ipcRenderer.send('open-file-dialog')
+        this.$electron.ipcRenderer.send('open-file-dialog', 'toolkit')
       }
     },
     readFileToArr: (fReadName, callback) => {
@@ -322,7 +322,7 @@ export default {
     }
   },
   mounted () {
-    this.$electron.ipcRenderer.on('selected-open-file', (event, path) => {
+    this.$electron.ipcRenderer.on('selected-open-file-toolkit', (event, path) => {
       // const name = path[0].slice(path[0].lastIndexOf('/') + 1)
       this.resetPage()
       if (this.activeName !== 'tab-1') {
@@ -332,14 +332,14 @@ export default {
         this.waitSwitchFilePath = path[0]
       }
     })
-    this.$electron.ipcRenderer.on('selected-save-file', (event, path) => {
+    this.$electron.ipcRenderer.on('selected-save-file-toolkit', (event, path) => {
       console.log('save to:' + path)
       var that = this
       fs.writeFile(path, this.concatStr, () => {
         that.$electron.ipcRenderer.send('show-message', '转换成功')
       })
     })
-    this.$electron.ipcRenderer.on('get-all-config-reply', (event, value) => {
+    this.$electron.ipcRenderer.on('get-all-config-reply-toolkit', (event, value) => {
       if (value.hasOwnProperty('toolkitDefaultPath')) {
         this.srcFilePath = value.toolkitDefaultPath
         if (this.srcFilePath) {

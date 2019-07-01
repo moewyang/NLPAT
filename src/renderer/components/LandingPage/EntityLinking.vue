@@ -105,7 +105,7 @@ export default {
     }
   },
   created () {
-    this.$electron.ipcRenderer.send('get-all-config')
+    this.$electron.ipcRenderer.send('get-all-config', 'linking')
   },
   methods: {
     aiAssist () {
@@ -119,7 +119,7 @@ export default {
       Object.assign(this.senList[this.curIndex], {
         links
       })
-      this.$electron.ipcRenderer.send('save-file', this.srcFilePath)
+      this.$electron.ipcRenderer.send('save-file', this.srcFilePath, 'linking')
     },
     onSaveAs () {
       console.log('onSaveAs')
@@ -129,7 +129,7 @@ export default {
       Object.assign(this.senList[this.curIndex], {
         links
       })
-      this.$electron.ipcRenderer.send('save-as-file-dialog')
+      this.$electron.ipcRenderer.send('save-as-file-dialog', 'linking')
     },
     onDel () {
       console.log('onDel')
@@ -139,11 +139,11 @@ export default {
       } else {
         delete this.senList[this.curIndex].links
       }
-      this.$electron.ipcRenderer.send('save-file-dialog')
+      this.$electron.ipcRenderer.send('save-file-dialog', 'linking')
     },
     openFile: function () {
       console.log('open-file-dialog')
-      this.$electron.ipcRenderer.send('open-file-dialog')
+      this.$electron.ipcRenderer.send('open-file-dialog', 'linking')
     },
     readFileToArr: (fReadName, callback) => {
       var fRead = fs.createReadStream(fReadName)
@@ -281,13 +281,13 @@ export default {
     }
   },
   mounted () {
-    this.$electron.ipcRenderer.on('selected-open-file', (event, path) => {
+    this.$electron.ipcRenderer.on('selected-open-file-linking', (event, path) => {
       // const name = path[0].slice(path[0].lastIndexOf('/') + 1)
       this.resetPage()
       this.srcFilePath = path[0]
       this.readFileToArr(path[0], this.readLineCallback)
     })
-    this.$electron.ipcRenderer.on('selected-save-file', (event, path) => {
+    this.$electron.ipcRenderer.on('direct-save-file-linking', (event, path) => {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
@@ -297,7 +297,17 @@ export default {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
-    this.$electron.ipcRenderer.on('get-all-config-reply', (event, value) => {
+    this.$electron.ipcRenderer.on('selected-save-file-linking', (event, path) => {
+      console.log('save to:' + path)
+      var output = this.senList.map((item) => {
+        return JSON.stringify(item)
+      }).join('\n')
+      var that = this
+      fs.writeFile(path, output, () => {
+        that.$electron.ipcRenderer.send('show-message', '保存成功')
+      })
+    })
+    this.$electron.ipcRenderer.on('get-all-config-reply-linking', (event, value) => {
       if (value.hasOwnProperty('linkingDefaultPath')) {
         this.srcFilePath = value.linkingDefaultPath
         if (this.srcFilePath) {

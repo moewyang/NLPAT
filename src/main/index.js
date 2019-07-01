@@ -52,7 +52,7 @@ app.on('activate', () => {
   }
 })
 
-ipcMain.on('open-file-dialog', (event) => {
+ipcMain.on('open-file-dialog', (event, modelName) => {
   dialog.showOpenDialog({
     properties: ['openFile', 'openDirectory'],
     filters: [{
@@ -61,12 +61,12 @@ ipcMain.on('open-file-dialog', (event) => {
     }]
   }, (path) => {
     if (path) {
-      event.sender.send('selected-open-file', path)
+      event.sender.send('selected-open-file-' + modelName, path)
     }
   })
 })
 
-ipcMain.on('open-file-dialog-all-type', (event) => {
+ipcMain.on('open-file-dialog-all-type', (event, modelName) => {
   dialog.showOpenDialog({
     properties: ['openFile', 'openDirectory'],
     filters: [{
@@ -75,12 +75,12 @@ ipcMain.on('open-file-dialog-all-type', (event) => {
     }]
   }, (path) => {
     if (path) {
-      event.sender.send('selected-open-file', path)
+      event.sender.send('selected-open-file-' + modelName, path)
     }
   })
 })
 
-ipcMain.on('save-as-file-dialog', (event) => {
+ipcMain.on('save-as-file-dialog', (event, modelName) => {
   dialog.showSaveDialog({
     filters: [{
       name: 'NLPAT File Type',
@@ -88,12 +88,12 @@ ipcMain.on('save-as-file-dialog', (event) => {
     }]
   }, (path) => {
     if (path) {
-      event.sender.send('selected-save-file', path)
+      event.sender.send('selected-save-file-' + modelName, path)
     }
   })
 })
 
-ipcMain.on('export-file-dialog', (event) => {
+ipcMain.on('export-file-dialog', (event, modelName) => {
   dialog.showSaveDialog({
     filters: [{
       name: 'Txt',
@@ -101,13 +101,13 @@ ipcMain.on('export-file-dialog', (event) => {
     }]
   }, (path) => {
     if (path) {
-      event.sender.send('export-save-file', path)
+      event.sender.send('export-save-file-' + modelName, path)
     }
   })
 })
 
-ipcMain.on('save-file', (event, path) => {
-  event.sender.send('selected-save-file', path)
+ipcMain.on('save-file', (event, path, modelName) => {
+  event.sender.send('direct-save-file-' + modelName, path)
 })
 
 ipcMain.on('show-message', (event, msg) => {
@@ -126,12 +126,8 @@ ipcMain.on('del-config', (event, key) => {
   config.delete(key)
 })
 
-ipcMain.on('get-config', (event, key) => {
-  event.sender.send('get-config-reply', config.get(key))
-})
-
-ipcMain.on('get-all-config', (event) => {
-  event.sender.send('get-all-config-reply', config.all())
+ipcMain.on('get-all-config', (event, modelName) => {
+  event.sender.send('get-all-config-reply-' + modelName, config.all())
 })
 
 /**

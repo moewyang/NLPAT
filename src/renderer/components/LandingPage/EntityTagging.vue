@@ -116,7 +116,7 @@ export default {
     }
   },
   created () {
-    this.$electron.ipcRenderer.send('get-all-config')
+    this.$electron.ipcRenderer.send('get-all-config', 'tag')
   },
   methods: {
     aiAssist () {
@@ -124,11 +124,11 @@ export default {
     },
     onSubmit () {
       console.log('onSubmit')
-      this.$electron.ipcRenderer.send('save-file', this.srcFilePath)
+      this.$electron.ipcRenderer.send('save-file', this.srcFilePath, 'tag')
     },
     onSaveAs () {
       console.log('onSaveAs')
-      this.$electron.ipcRenderer.send('save-as-file-dialog')
+      this.$electron.ipcRenderer.send('save-as-file-dialog', 'tag')
     },
     onExport () {
       console.log('onExport')
@@ -194,7 +194,7 @@ export default {
         }).join('\n')
       }).join('\n\n')
       this.exportDialogVisible = false
-      this.$electron.ipcRenderer.send('export-file-dialog')
+      this.$electron.ipcRenderer.send('export-file-dialog', 'tag')
     },
     onDelEntity (i) {
       console.log('onDelEntity')
@@ -202,7 +202,7 @@ export default {
     },
     openFile: function () {
       console.log('open-file-dialog')
-      this.$electron.ipcRenderer.send('open-file-dialog')
+      this.$electron.ipcRenderer.send('open-file-dialog', 'tag')
     },
     readFileToArr: (fReadName, callback) => {
       var fRead = fs.createReadStream(fReadName)
@@ -322,13 +322,13 @@ export default {
     }
   },
   mounted () {
-    this.$electron.ipcRenderer.on('selected-open-file', (event, path) => {
+    this.$electron.ipcRenderer.on('selected-open-file-tag', (event, path) => {
       // const name = path[0].slice(path[0].lastIndexOf('/') + 1)
       this.resetPage()
       this.srcFilePath = path[0]
       this.readFileToArr(path[0], this.readLineCallback)
     })
-    this.$electron.ipcRenderer.on('selected-save-file', (event, path) => {
+    this.$electron.ipcRenderer.on('direct-save-file-tag', (event, path) => {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
@@ -338,14 +338,24 @@ export default {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
-    this.$electron.ipcRenderer.on('export-save-file', (event, path) => {
+    this.$electron.ipcRenderer.on('selected-save-file-tag', (event, path) => {
+      console.log('save to:' + path)
+      var output = this.senList.map((item) => {
+        return JSON.stringify(item)
+      }).join('\n')
+      var that = this
+      fs.writeFile(path, output, () => {
+        that.$electron.ipcRenderer.send('show-message', '保存成功')
+      })
+    })
+    this.$electron.ipcRenderer.on('export-save-file-tag', (event, path) => {
       console.log('save to:' + path)
       var that = this
       fs.writeFile(path, this.exportStr, () => {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
-    this.$electron.ipcRenderer.on('get-all-config-reply', (event, value) => {
+    this.$electron.ipcRenderer.on('get-all-config-reply-tag', (event, value) => {
       if (value.hasOwnProperty('tagDefaultPath')) {
         this.srcFilePath = value.tagDefaultPath
         if (this.srcFilePath) {

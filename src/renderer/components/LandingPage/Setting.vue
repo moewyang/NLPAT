@@ -55,13 +55,13 @@ export default {
     }
   },
   created () {
-    this.$electron.ipcRenderer.send('get-all-config')
+    this.$electron.ipcRenderer.send('get-all-config', 'setting')
   },
   methods: {
     openFile: function (index) {
       console.log('open-file-dialog')
       this.cIndex = index
-      this.$electron.ipcRenderer.send('open-file-dialog')
+      this.$electron.ipcRenderer.send('open-file-dialog', 'setting')
     },
     delPath: function (index) {
       this.$electron.ipcRenderer.send('del-config', this.configNames[index])
@@ -76,11 +76,11 @@ export default {
     }
   },
   mounted () {
-    this.$electron.ipcRenderer.on('selected-open-file', (event, path) => {
+    this.$electron.ipcRenderer.on('selected-open-file-setting', (event, path) => {
       this.srcFilePaths.splice(this.cIndex, 1, path[0])
       this.$electron.ipcRenderer.send('set-config', this.configNames[this.cIndex], path[0])
     })
-    this.$electron.ipcRenderer.on('get-all-config-reply', (event, value) => {
+    this.$electron.ipcRenderer.on('get-all-config-reply-setting', (event, value) => {
       if (value.hasOwnProperty('tagDefaultPath')) {
         this.srcFilePaths.splice(0, 1, value.tagDefaultPath)
       }

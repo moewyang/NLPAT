@@ -6,14 +6,23 @@
             <div class="title">远程监督</div>
             <div class="content">
               <p>即Distant Supervision，是目前关系抽取中比较常见的一类做法。</p>
-              <p>该方法由 M Mintz 大佬于ACL2009上首次提出，它既不是单纯的传统意义上的监督语料，当然也不是无监督。它是一种用KB去对齐朴素文本的标注方法（Distant supervision for relation extraction without labeled data ）。KB中已经有关系名和实体对的三元组，只需要把这三元组付给朴素文本中相应的句子就可以了，那按照什么原则付？（数据库监督）M Mintz 提出了一种十分大胆的假设:如果我们训练语料中的句子所包含的实体对在数据库中有关系的体现，那么我们认为语料库中所有包含相同实体对的句子都表达此关系。那么，自然而然的我们提取特征的时候就会出现很多噪声。比如两个实体之间还有别的关系或者是没有关系，这样的训练数据会对我们的关系抽取器产生影响。</p>
+              <p>该方法由 M Mintz 大佬于ACL2009上首次提出，它既不是单纯的传统意义上的监督语料，当然也不是无监督。它是一种用KB去对齐朴素文本的标注方法（Distant supervision for relation extraction without labeled data ）。KB中已经有关系名和实体对的三元组，只需要把这三元组付给朴素文本中相应的句子就可以了，那按照什么原则？（数据库监督）M Mintz 提出了一种十分大胆的假设:如果我们训练语料中的句子所包含的实体对在数据库中有关系的体现，那么我们认为语料库中所有包含相同实体对的句子都表达此关系。那么，自然而然的我们提取特征的时候就会出现很多噪声。比如两个实体之间还有别的关系或者是没有关系，这样的训练数据会对我们的关系抽取器产生影响。</p>
             </div>
           </el-card>
           <br>
           <el-card shadow="always">
             <div class="title">常见标注方法</div>
             <div class="content">
-              <p>IO，BIO，BIOES，BMEWO</p>
+              <p>常见字母标签如下：</p>
+              <p>B，即Begin，表示开始</p>
+              <p>I，即Intermediate，表示中间</p>
+              <p>E，即End，表示结尾</p>
+              <p>S，即Single，表示单个字符</p>
+              <p>O，即Other，表示其他，用于标记无关字符</p>
+              <p>常见标注方法：IO，BIO，BIOES，BMEWO</p>
+              <p>BIO标注法，是CoNLL2003采用的标注法，I表示inside, O表示Outside, B表示Begin。而标注的label是I-XXX的，表示这个字符，在XXX类命名实体的内部(inside)。B用于标记一个命名实体的开始。</p>
+              <p>BIOES标注法，这是在IOB方法上，扩展出的一个更复杂，但更完备的标注方法。其中 B表示这个词处于一个实体的开始(Begin), I表示内部(inside), O表示外部(outside), E表示这个词处于一个实体的结束为止，S表示，这个词是自己就可以组成一个实体(Single)。BIOES是目前最通用的命名实体标注方法。</p>
+
               <p></p>
             </div>
           </el-card>
