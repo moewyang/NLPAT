@@ -156,15 +156,15 @@ export default {
         singleTag = 'S-'
       }
       this.exportStr = this.senList.map((item) => {
-        var wordList = item.string.split('')
+        var wordList = item.string.pos.split('')
         var entities = item.entities.sort((item1, item2) => {
-          return item1.start > item2.start
+          return item1.pos.split(',')[0] > item2.pos.split(',')[0]
         }).map(x => x)
         var isInside = false
         var curEntity = entities.shift()
         if (curEntity !== undefined) {
-          var curStart = curEntity.start
-          var curEnd = curEntity.end - 1
+          var curStart = curEntity.pos.split(',')[0]
+          var curEnd = curEntity.pos.split(',')[1] - 1
           var curType = curEntity.type
         }
         return wordList.map((wordItem, index) => {
@@ -179,8 +179,8 @@ export default {
               isInside = false
               curEntity = entities.shift()
               if (curEntity !== undefined) {
-                curStart = curEntity.start
-                curEnd = curEntity.end - 1
+                curStart = curEntity.pos.split(',')[0]
+                curEnd = curEntity.pos.split(',')[1] - 1
                 curType = curEntity.type
               }
               return wordItem + that.seperate + endTag + curType
@@ -232,10 +232,10 @@ export default {
       var senArr = sen.split('')
       var entities = this.senList[this.curIndex].entities
       var startIndexList = entities.map((item) => {
-        return item.start
+        return item.pos.split(',')[0]
       })
       var endIndexList = entities.map((item) => {
-        return item.end
+        return item.pos.split(',')[1]
       })
       for (var i = 0; i < startIndexList.length; i++) {
         senArr[startIndexList[i]] = '<div class="el-badge item"><sup class="el-badge__content el-badge__content--primary is-fixed">' + (i + 1) + '</sup><span style=\'background-color: rgb(216, 236, 255)\'>' + senArr[startIndexList[i]]
@@ -275,10 +275,10 @@ export default {
           var selectEndIndex = selection.focusOffset
           var entities = this.senList[this.curIndex].entities
           var startIndexList = entities.map((item) => {
-            return item.start
+            return item.pos.split(',')[0]
           })
           var endIndexList = entities.map((item) => {
-            return item.end
+            return item.pos.split(',')[1]
           })
           // check cross
           for (var i = 0; i < startIndexList.length; i++) {
@@ -292,7 +292,7 @@ export default {
           }
           this.senList[this.curIndex].entities.push({'start': selectStartIndex, 'end': selectEndIndex, 'word': selectionStr, 'type': 'MISC'})
           this.senList[this.curIndex].entities.sort((item1, item2) => {
-            return item1.start > item2.start
+            return item1.pos.split(',')[0] > item2.pos.split(',')[0]
           })
           // let range = window.getSelection().getRangeAt(0)
           // let container = document.createElement('span')

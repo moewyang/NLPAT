@@ -94,7 +94,8 @@ export default {
       kgUrl: 'http://localhost:7474/db/data/transaction/commit',
       kgAuthCode: 'bmVvNGo6MjA4MDI5OTE=',
       tip: '',
-      curNum: 1
+      curNum: 1,
+      isOnSubmit: false
     }
   },
   watch: {
@@ -113,6 +114,10 @@ export default {
       console.log('aiAssist')
     },
     onSubmit () {
+      if (this.isOnSubmit) {
+        return
+      }
+      this.isOnSubmit = true
       console.log('onSubmit')
       var links = this.entities[this.curIndex].map((item) => {
         return item.description
@@ -173,10 +178,10 @@ export default {
       var senArr = sen.split('')
       var entities = this.senList[this.curIndex].entities
       var startIndexList = entities.map((item) => {
-        return item.start
+        return item.pos.split(',')[0]
       })
       var endIndexList = entities.map((item) => {
-        return item.end
+        return item.pos.split(',')[1]
       })
       for (var i = 0; i < startIndexList.length; i++) {
         senArr[startIndexList[i]] = '<div class="el-badge item"><sup class="el-badge__content el-badge__content--primary is-fixed">' + (i + 1) + '</sup><span style=\'background-color: rgb(216, 236, 255)\'>' + senArr[startIndexList[i]]
@@ -267,7 +272,8 @@ export default {
             id: i + 1,
             name: itemJson.entities[i].word,
             type: itemJson.entities[i].type,
-            description: this.senList[index].hasOwnProperty('links') ? this.senList[index].links[i] : ''
+            // description: this.senList[index].hasOwnProperty('links') ? this.senList[index].links[i] : ''
+            description: itemJson.entities[i].link === 'none' ? '' : itemJson.entities[i].link
           })
         }
         return entityList
@@ -297,6 +303,7 @@ export default {
       fs.writeFile(path, output, () => {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
+      this.isOnSubmit = false
     })
     this.$electron.ipcRenderer.on('selected-save-file-' + this.modelName, (event, path) => {
       console.log('save to:' + path)

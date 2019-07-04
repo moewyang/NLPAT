@@ -164,10 +164,10 @@ export default {
       var senArr = sen.split('')
       var entities = this.senList[this.curIndex].entities
       var startIndexList = entities.map((item) => {
-        return item.start
+        return item.pos.split(',')[0]
       })
       var endIndexList = entities.map((item) => {
-        return item.end
+        return item.pos.split(',')[1]
       })
       for (var i = 0; i < startIndexList.length; i++) {
         senArr[startIndexList[i]] = '<div class="el-badge item"><sup class="el-badge__content el-badge__content--primary is-fixed">' + (i + 1) + '</sup><span style=\'background-color: rgb(216, 236, 255)\'>' + senArr[startIndexList[i]]
@@ -256,40 +256,47 @@ export default {
       var validEntity = data.map((item, index) => {
         var entityList = []
         var itemJson = JSON.parse(item)
-        if (!this.senList[index].hasOwnProperty('links')) {
-          return []
-        } else {
-          for (var i = 0; i < itemJson.entities.length; i++) {
-            entityList.push({
-              id: i + 1,
-              name: itemJson.entities[i].word,
-              nid: this.senList[index].links[i]
-            })
-          }
-          return entityList
+        for (var i = 0; i < itemJson.entities.length; i++) {
+          entityList.push({
+            id: i + 1,
+            pos: itemJson.entities[i].pos,
+            name: itemJson.entities[i].word,
+            nid: itemJson.entities[i].link
+          })
         }
+        return entityList
       })
       for (var k = 0; k < validEntity.length; ++k) {
         var pair = []
-        var count = 0
         for (var i = 0; i < validEntity[k].length; ++i) {
           for (var j = 0; j < validEntity[k].length; ++j) {
-            if (i !== j && validEntity[k][i].nid !== '' && validEntity[k][j].nid !== '') {
+            var leftNid = validEntity[k][i].nid
+            var rightNid = validEntity[k][j].nid
+            if (i !== j && leftNid !== 'none' && rightNid !== 'none') {
               pair.push({
                 leftId: validEntity[k][i].id,
                 rightId: validEntity[k][j].id,
+                leftPos: validEntity[k][i].pos,
+                rightPos: validEntity[k][j].pos,
                 leftName: validEntity[k][i].name,
                 rightName: validEntity[k][j].name,
-                leftNid: validEntity[k][i].nid,
-                rightNid: validEntity[k][j].nid,
-                relation: this.senList[k].hasOwnProperty('relations') ? this.senList[k].relations[count].relation : ''
+                leftNid,
+                rightNid,
+                relation: this.senList[k].hasOwnProperty('relations') ? this.findRelation(this.senList[k].relations, validEntity[k][i].pos, validEntity[k][j].pos) : ''
               })
-              count++
             }
           }
         }
         this.entityPairs.push(pair)
       }
+    },
+    findRelation (relations, leftPos, rightPos) {
+      for (var i in relations) {
+        if (relations[i].entity1 === leftPos && relations[i].entity2 === rightPos) {
+          return relations[i].relation
+        }
+      }
+      return ''
     },
     resetPage () {
       this.curIndex = 0
