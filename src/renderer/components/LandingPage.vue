@@ -69,6 +69,6 @@
       border-radius: 20px;
       box-shadow: 0 0 1px 0 rgba(232, 237, 250, .6);
       background: white;
-      overflow-y: auto;
+      overflow-y: scroll;
   }
 </style>

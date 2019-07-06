@@ -1,48 +1,50 @@
 <template>
   <div class="entity-relationship-page">
+    <div class="tip" v-if="tip" v-html="tip"></div>
     <el-card shadow="always">
-      <div class="tip" v-if="tip" v-html="tip"></div>
-      <p>① 打开句子文件</p>
-      <div class="block open-block">
-        <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
-        <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
-        <!-- <div slot="tip" class="el-upload__tip">TIPS：只能上传na文件，且不超过500kb</div> -->
+      <div >
+        <el-tooltip v-if="srcFilePath" effect="light" placement="top-start">
+          <el-button size="mini" type="primary" @click="openFile">打开.na文件</el-button>
+          <div slot="content">当前文件路径:{{ srcFilePath }}</div>
+        </el-tooltip>
+        <el-button v-else size="mini" type="primary" @click="openFile">打开.na文件</el-button>
+        <el-button size="mini" type="warning" @click="onSubmit">保存</el-button>
+        <el-button size="mini" type="warning" @click="onSaveAs">另存为</el-button>
+        <el-button size="mini" type="danger" @click="onDel">清除链接</el-button>
+        <el-button size="mini" type="success" @click="aiAssist">智能协助</el-button>
       </div>
     </el-card>
     <br>
-    <el-card shadow="always">
-      <p>② 查看当前句子</p>
-      <el-row>
-        <el-col :span="6">
-          <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> / {{listLen}}</div>
-        </el-col>
-        <el-col :span="6" style="line-height: 2.6em">
-          <el-button size="mini" type="warning" @click="aiAssist">智能协助</el-button>
-        </el-col>
-      </el-row>
+    <el-card shadow="always" v-loading="pageLoading">
+      <div>
+        <span>当前</span>
+        <span class="jump-index" v-if="listLen !== 0">第 <el-input-number class="index-input" v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> 句&nbsp;&nbsp;共{{listLen}}句</span>
+        <span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('relations') ? '已修改' : '未修改'}}）</span>
+      </div>
       <el-row class="block sen-block">
         <el-col :span="2">
-          <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
+          <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
         </el-col>
         <el-col class="sen-wrapper" :span="20">
           <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="color(senList[curIndex].string)"></el-input>
           <div v-else class="sen">暂无内容</div>
         </el-col>
         <el-col :span="2">
-          <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
+          <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
         </el-col>
       </el-row>
-    </el-card>
-    <br>
-    <el-card shadow="always">
-      <p>③ 当前句子包含以下实体，请找出知识库中对应关系<span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('relations') ? '已修改' : '未修改'}}）</span></p>
+      <p>标注实体之间的关系:</p>
       <el-form class="block entity-block" ref="form" label-width="0px" label-position="left">
         <el-form-item v-for="(item, i) in entityPairs[curIndex]" v-bind:key="i">
-          <el-tag type="success">{{ item.leftId }}</el-tag>
-          <el-tag type="primary">{{ item.leftName }}({{ item.leftNid }})</el-tag>
+          <el-badge :value="item.leftId" type="primary">
+            <el-tag type="primary">{{ item.leftName }}({{ item.leftNid }})</el-tag>
+          </el-badge>
+          &nbsp;
           <span>=></span>
-          <el-tag type="success">{{ item.rightId }}</el-tag>
-          <el-tag type="primary">{{ item.rightName }}({{ item.rightNid }})</el-tag>
+          <el-badge :value="item.rightId" type="primary">
+            <el-tag type="primary">{{ item.rightName }}({{ item.rightNid }})</el-tag>
+          </el-badge>
+          &nbsp;
           <el-autocomplete :highlight-first-item="true" class="entity-auto-complete" popper-class="entitiy-pull-down" v-model="item.relation" :fetch-suggestions="querySearchAsync(item.leftNid, item.rightNid)" placeholder="点击获取" clearable>
             <template slot-scope="{ item }">
               <div class="nid">{{ item.relationId }}</div>
@@ -51,18 +53,18 @@
           </el-autocomplete>
         </el-form-item>
       </el-form>
-      <el-button size="mini" type="primary" @click="onSubmit">保存</el-button>
-      <el-button size="mini" type="primary" @click="onSaveAs">另存为</el-button>
-      <el-button size="mini" type="danger" @click="onDel">清除链接</el-button>
     </el-card>
   </div>
 </template>
 <script>
+import { Message } from 'element-ui'
 const fs = require('fs')
 const readline = require('readline')
 export default {
   data () {
     return {
+      pageLoading: false,
+      tip: '',
       modelName: 'relation',
       srcFilePath: '',
       dragover: false,
@@ -76,7 +78,6 @@ export default {
       entityPairs: [],
       kgUrl: 'http://localhost:7474/db/data/transaction/commit',
       kgAuthCode: 'bmVvNGo6MjA4MDI5OTE=',
-      tip: '',
       curNum: 1
     }
   },
@@ -137,7 +138,15 @@ export default {
       console.log('open-file-dialog')
       this.$electron.ipcRenderer.send('open-file-dialog', this.modelName)
     },
-    readFileToArr: (fReadName, callback) => {
+    readFileToArr: (vueThis, fReadName, callback) => {
+      var size = fs.statSync(fReadName).size
+      if (size > 10485760) {
+        Message.warning('打开文件不能超过10MB')
+        vueThis.pageLoading = false
+        return
+      }
+      vueThis.resetPage()
+      vueThis.srcFilePath = fReadName
       var fRead = fs.createReadStream(fReadName)
       var objReadline = readline.createInterface({
         input: fRead
@@ -289,6 +298,7 @@ export default {
         }
         this.entityPairs.push(pair)
       }
+      this.pageLoading = false
     },
     findRelation (relations, leftPos, rightPos) {
       for (var i in relations) {
@@ -310,9 +320,8 @@ export default {
   mounted () {
     this.$electron.ipcRenderer.on('selected-open-file-' + this.modelName, (event, path) => {
       // const name = path[0].slice(path[0].lastIndexOf('/') + 1)
-      this.resetPage()
-      this.srcFilePath = path[0]
-      this.readFileToArr(path[0], this.readLineCallback)
+      this.pageLoading = true
+      this.readFileToArr(this, path[0], this.readLineCallback)
     })
     this.$electron.ipcRenderer.on('direct-save-file-' + this.modelName, (event, path) => {
       console.log('save to:' + path)
@@ -336,9 +345,9 @@ export default {
     })
     this.$electron.ipcRenderer.on('get-all-config-reply-' + this.modelName, (event, value) => {
       if (value.hasOwnProperty('relationDefaultPath')) {
-        this.srcFilePath = value.relationDefaultPath
-        if (this.srcFilePath) {
-          this.readFileToArr(this.srcFilePath, this.readLineCallback)
+        this.pageLoading = true
+        if (value.relationDefaultPath) {
+          this.readFileToArr(this, value.relationDefaultPath, this.readLineCallback)
         }
       }
       if (value.hasOwnProperty('kgUrl')) {
@@ -355,22 +364,27 @@ export default {
 </script>
 <style lang="scss" scoped>
 .entity-relationship-page {
+  .tip {
+    font-size: 20px;
+    color: #F56C6C;
+    margin: 10px 0;
+  }
   .block {
     display: block;
     width: 100%;
     margin: 10px 0;
   }
-  .open-block {
-    padding-left: 30px;
-  }
   .jump-index {
     margin-top: 10px;
-    margin-left: 20px;
+    .index-input {
+      width: 120px;
+    }
   }
   .sen-block {
     text-align: center;
+    margin: 15px 0;
     .sen {
-      border: 1px solid #eee;
+      border: 1px solid #CCC;
       border-radius: 10px;
       padding: 10px;
     }
@@ -378,21 +392,17 @@ export default {
       text-align: left;
     }
     .sen-btn {
-      margin-top: 10px;
-    }
-    .sen-ai {
-      text-align: center;
-      margin-top: 70px;
+      margin-top: 4px;
     }
   }
   .entity-block {
     border: 1px solid #EEE;
     border-radius: 10px;
     padding: 20px;
-    height: 14vw;
+    height: 318px;
     overflow-y: auto;
     .entity-auto-complete {
-      width: 85%;
+      width: auto;
     }
   }
 }

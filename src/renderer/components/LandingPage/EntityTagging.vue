@@ -1,27 +1,31 @@
 <template>
   <div class="entity-tagging-page">
+    <div class="tip" v-if="tip" v-html="tip"></div>
     <el-card shadow="always">
-      <p>① 打开句子文件</p>
-      <div class="block open-block">
-        <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
-        <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
-        <!-- <div slot="tip" class="el-upload__tip">TIPS：只能上传na文件，且不超过500kb</div> -->
+      <div >
+        <el-tooltip v-if="srcFilePath" effect="light" placement="top-start">
+          <el-button size="mini" type="primary" @click="openFile">打开.na文件</el-button>
+          <div slot="content">当前文件路径：{{ srcFilePath }}</div>
+        </el-tooltip>
+        <el-button v-else size="mini" type="primary" @click="openFile">打开.na文件</el-button>
+        <el-button size="mini" type="warning" @click="onSubmit">保存</el-button>
+        <el-button size="mini" type="warning" @click="onSaveAs">另存为</el-button>
+        <el-button size="mini" type="warning" @click="exportDialogVisible = true">导出</el-button>
+        <el-button size="mini" type="success" @click="aiAssist">智能协助</el-button>
       </div>
     </el-card>
     <br>
-    <el-card shadow="always">
-      <p>② 查看和标注当前句子</p>
-      <el-row>
-        <el-col :span="6">
-          <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> / {{listLen}}</div>
-        </el-col>
-        <el-col :span="6" style="line-height: 2.6em">
-          <el-button size="mini" type="warning" @click="aiAssist">智能协助</el-button>
-        </el-col>
-      </el-row>
+    <el-card shadow="always" v-loading="pageLoading">
+      <p>标注实体位置（指上文本后拖动选择）:</p>
+      <br>
+      <div>
+        <span>当前</span>
+        <span class="jump-index" v-if="listLen !== 0">第 <el-input-number class="index-input" v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> 句&nbsp;&nbsp;共{{listLen}}句</span>
+        <span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('links') ? '已修改' : '未修改'}}）</span>
+      </div>
       <el-row class="block sen-block" id="sen-block">
         <el-col :span="2">
-          <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
+          <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
         </el-col>
         <el-col class="sen-wrapper" :span="20">
           <el-input type="text" v-if="isEdit && senList[curIndex]" class="sen" v-html="senList[curIndex].string" @mouseup.native="getSelectedContents" @mouseleave.native="isEdit = false"></el-input>
@@ -29,45 +33,45 @@
           <div v-else class="sen">暂无内容</div>
         </el-col>
         <el-col :span="2">
-          <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
+          <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
         </el-col>
       </el-row>
-    </el-card>
-    <br>
-    <el-card shadow="always">
-      <p>③ 当前句子已标注以下实体</p>
+      <p>标注实体类别:</p>
       <el-form v-if="senList[curIndex]" class="block entity-block" ref="form" label-width="40px" label-position="left">
-        <el-form-item v-for="(item, i) in senList[curIndex].entities" v-bind:key="i" :label="'【' + (i + 1) + '】'">
-          <el-tag type="primary">{{ item.word }}</el-tag>
+        <el-form-item v-for="(item, i) in senList[curIndex].entities" v-bind:key="i" label-width="0">
+          <el-badge :value="i + 1" type="primary">
+            <el-tag type="primary">{{ item.word }}</el-tag>
+          </el-badge>
+          &nbsp;
           <el-select size="small" v-model="item.type" placeholder="请选择">
             <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
           </el-select>
-          <el-button size="small" type="danger" icon="el-icon-close" circle @click="onDelEntity(i)"></el-button>
+          <el-button size="mini" type="default" icon="el-icon-close" circle @click="onDelEntity(i)"></el-button>
         </el-form-item>
       </el-form>
-      <el-button size="mini" type="primary" @click="onSubmit">保存</el-button>
-      <el-button size="mini" type="primary" @click="onSaveAs">另存为</el-button>
-      <el-button size="mini" type="success" @click="exportDialogVisible = true">导出</el-button>
-      <el-dialog title="导出选项" :visible.sync="exportDialogVisible" width="30%" center>
-        <div class="export-block">
-          <el-select class="export-select" v-model="exportType" placeholder="请选择">
-            <el-option v-for="item in exportTypeOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
-          </el-select>
-        </div>
-        <span slot="footer" class="dialog-footer">
-          <el-button @click="exportDialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="onExport">确 定</el-button>
-        </span>
-      </el-dialog>
     </el-card>
+    <el-dialog title="导出选项" :visible.sync="exportDialogVisible" width="30%" center>
+      <div class="export-block">
+        <el-select class="export-select" v-model="exportType" placeholder="请选择">
+          <el-option v-for="item in exportTypeOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+        </el-select>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="exportDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="onExport">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 <script>
+import { Message } from 'element-ui'
 const fs = require('fs')
 const readline = require('readline')
 export default {
   data () {
     return {
+      pageLoading: false,
+      tip: '',
       modelName: 'tag',
       srcFilePath: '',
       showError: false,
@@ -205,7 +209,15 @@ export default {
       console.log('open-file-dialog')
       this.$electron.ipcRenderer.send('open-file-dialog', this.modelName)
     },
-    readFileToArr: (fReadName, callback) => {
+    readFileToArr: (vueThis, fReadName, callback) => {
+      var size = fs.statSync(fReadName).size
+      if (size > 10485760) {
+        Message.warning('打开文件不能超过10MB')
+        vueThis.pageLoading = false
+        return
+      }
+      vueThis.resetPage()
+      vueThis.srcFilePath = fReadName
       var fRead = fs.createReadStream(fReadName)
       var objReadline = readline.createInterface({
         input: fRead
@@ -254,6 +266,7 @@ export default {
       this.senList = data.map((item) => {
         return JSON.parse(item)
       })
+      this.pageLoading = false
     },
     resetPage () {
       this.curIndex = 0
@@ -290,7 +303,7 @@ export default {
               return
             }
           }
-          this.senList[this.curIndex].entities.push({'start': selectStartIndex, 'end': selectEndIndex, 'word': selectionStr, 'type': 'MISC'})
+          this.senList[this.curIndex].entities.push({'pos': selectStartIndex + ',' + selectEndIndex, 'word': selectionStr, 'type': 'MISC'})
           this.senList[this.curIndex].entities.sort((item1, item2) => {
             return item1.pos.split(',')[0] > item2.pos.split(',')[0]
           })
@@ -325,9 +338,8 @@ export default {
   mounted () {
     this.$electron.ipcRenderer.on('selected-open-file-' + this.modelName, (event, path) => {
       // const name = path[0].slice(path[0].lastIndexOf('/') + 1)
-      this.resetPage()
-      this.srcFilePath = path[0]
-      this.readFileToArr(path[0], this.readLineCallback)
+      this.pageLoading = true
+      this.readFileToArr(this, path[0], this.readLineCallback)
     })
     this.$electron.ipcRenderer.on('direct-save-file-' + this.modelName, (event, path) => {
       console.log('save to:' + path)
@@ -358,9 +370,9 @@ export default {
     })
     this.$electron.ipcRenderer.on('get-all-config-reply-' + this.modelName, (event, value) => {
       if (value.hasOwnProperty('tagDefaultPath')) {
-        this.srcFilePath = value.tagDefaultPath
-        if (this.srcFilePath) {
-          this.readFileToArr(this.srcFilePath, this.readLineCallback)
+        this.pageLoading = true
+        if (value.tagDefaultPath) {
+          this.readFileToArr(this, value.tagDefaultPath, this.readLineCallback)
         }
       }
     })
@@ -369,6 +381,11 @@ export default {
 </script>
 <style lang="scss" scoped>
 .entity-tagging-page {
+  .tip {
+    font-size: 20px;
+    color: #F56C6C;
+    margin: 10px 0;
+  }
   .block {
     display: block;
     width: 100%;
@@ -379,12 +396,15 @@ export default {
   }
   .jump-index {
     margin-top: 10px;
-    margin-left: 20px;
+    .index-input {
+      width: 120px;
+    }
   }
   .sen-block {
     text-align: center;
+    margin: 15px 0;
     .sen {
-      border: 1px solid #eee;
+      border: 1px solid #CCC;
       border-radius: 10px;
       padding: 10px;
     }
@@ -392,18 +412,14 @@ export default {
       text-align: left;
     }
     .sen-btn {
-      margin-top: 10px;
-    }
-    .sen-ai {
-      text-align: center;
-      margin-top: 70px;
+      margin-top: 4px;
     }
   }
   .entity-block {
     border: 1px solid #EEE;
     border-radius: 10px;
     padding: 20px;
-    height: 14vw;
+    height: 268px;
     overflow-y: auto;
     .entity-auto-complete {
       width: 85%;

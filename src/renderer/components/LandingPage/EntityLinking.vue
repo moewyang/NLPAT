@@ -2,44 +2,45 @@
   <div class="entity-linking-page">
     <div class="tip" v-if="tip" v-html="tip"></div>
     <el-card shadow="always">
-      <p>① 打开句子文件</p>
-      <div class="block open-block">
-        <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
-        <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
-        <!-- <div slot="tip" class="el-upload__tip">TIPS：只能上传na文件，且不超过500kb</div> -->
+      <div >
+        <el-tooltip v-if="srcFilePath" effect="light" placement="top-start">
+          <el-button size="mini" type="primary" @click="openFile">打开.na文件</el-button>
+          <div slot="content">当前文件路径:{{ srcFilePath }}</div>
+        </el-tooltip>
+        <el-button v-else size="mini" type="primary" @click="openFile">打开.na文件</el-button>
+        <el-button size="mini" type="warning" @click="onSubmit">保存</el-button>
+        <el-button size="mini" type="warning" @click="onSaveAs">另存为</el-button>
+        <el-button size="mini" type="success" @click="aiAssist">智能协助</el-button>
       </div>
     </el-card>
     <br>
-    <el-card shadow="always">
-      <p>② 查看当前句子</p>
-      <el-row>
-        <el-col :span="6">
-          <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> / {{listLen}}</div>
-        </el-col>
-        <el-col :span="6" style="line-height: 2.6em">
-          <el-button size="mini" type="warning" @click="aiAssist">智能协助</el-button>
-        </el-col>
-      </el-row>
+    <el-card shadow="always" v-loading="pageLoading">
+      <div>
+        <span>当前</span>
+        <span class="jump-index" v-if="listLen !== 0">第 <el-input-number class="index-input" v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> 句&nbsp;&nbsp;共{{listLen}}句</span>
+        <span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('links') ? '已修改' : '未修改'}}）</span>
+      </div>
       <el-row class="block sen-block">
         <el-col :span="2">
-          <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
+          <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
         </el-col>
         <el-col class="sen-wrapper" :span="20">
           <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="color(senList[curIndex].string)"></el-input>
           <div v-else class="sen">暂无内容</div>
         </el-col>
         <el-col :span="2">
-          <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
+          <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
         </el-col>
       </el-row>
-    </el-card>
-    <br>
-    <el-card shadow="always">
-      <p>③ 当前句子包含以下实体，请找出知识库中对应实体<span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('links') ? '已修改' : '未修改'}}）</span></p>
+      <p>标注知识库中对应实体:</p>
       <el-form class="block entity-block" ref="form" label-width="40px" label-position="left">
-        <el-form-item v-for="(item, i) in entities[curIndex]" v-bind:key="i" :label="'【' + item.id + '】'">
-          <el-tag type="primary">{{ item.name }}</el-tag>
+        <el-form-item v-for="(item, i) in entities[curIndex]" v-bind:key="i" label-width="0">
+          <el-badge :value="item.id" type="primary">
+            <el-tag type="primary">{{ item.name }}</el-tag>
+          </el-badge>
+          &nbsp;
           <el-tag type="success">{{ item.type }}</el-tag>
+          &nbsp;
           <el-autocomplete :highlight-first-item="true" class="entity-auto-complete" popper-class="entitiy-pull-down" v-model="item.description" :fetch-suggestions="querySearchAsync(item.name)" placeholder="点击获取" clearable>
             <template slot-scope="{ item }">
               <div class="nid">{{ item.neoId }}</div>
@@ -48,18 +49,18 @@
           </el-autocomplete>
         </el-form-item>
       </el-form>
-      <el-button size="mini" type="primary" @click="onSubmit">保存</el-button>
-      <el-button size="mini" type="primary" @click="onSaveAs">另存为</el-button>
-      <el-button size="mini" type="danger" @click="onDel">清除链接</el-button>
     </el-card>
   </div>
 </template>
 <script>
+import { Message } from 'element-ui'
 const fs = require('fs')
 const readline = require('readline')
 export default {
   data () {
     return {
+      pageLoading: false,
+      tip: '',
       modelName: 'linking',
       srcFilePath: '',
       entities: [[
@@ -93,7 +94,6 @@ export default {
       jumpTo: 1,
       kgUrl: 'http://localhost:7474/db/data/transaction/commit',
       kgAuthCode: 'bmVvNGo6MjA4MDI5OTE=',
-      tip: '',
       curNum: 1,
       isOnSubmit: false
     }
@@ -137,21 +137,19 @@ export default {
       })
       this.$electron.ipcRenderer.send('save-as-file-dialog', this.modelName)
     },
-    onDel () {
-      console.log('onDel')
-      if (!this.senList[this.curIndex].hasOwnProperty('links')) {
-        this.$electron.ipcRenderer.send('show-message', '无需清除')
-        return
-      } else {
-        delete this.senList[this.curIndex].links
-      }
-      this.$electron.ipcRenderer.send('save-file-dialog', this.modelName)
-    },
     openFile: function () {
       console.log('open-file-dialog')
       this.$electron.ipcRenderer.send('open-file-dialog', this.modelName)
     },
-    readFileToArr: (fReadName, callback) => {
+    readFileToArr: (vueThis, fReadName, callback) => {
+      var size = fs.statSync(fReadName).size
+      if (size > 10485760) {
+        Message.warning('打开文件不能超过10MB')
+        vueThis.pageLoading = false
+        return
+      }
+      vueThis.resetPage()
+      vueThis.srcFilePath = fReadName
       var fRead = fs.createReadStream(fReadName)
       var objReadline = readline.createInterface({
         input: fRead
@@ -278,6 +276,7 @@ export default {
         }
         return entityList
       })
+      this.pageLoading = false
     },
     resetPage () {
       this.curIndex = 0
@@ -290,9 +289,8 @@ export default {
   mounted () {
     this.$electron.ipcRenderer.on('selected-open-file-' + this.modelName, (event, path) => {
       // const name = path[0].slice(path[0].lastIndexOf('/') + 1)
-      this.resetPage()
-      this.srcFilePath = path[0]
-      this.readFileToArr(path[0], this.readLineCallback)
+      this.pageLoading = true
+      this.readFileToArr(this, path[0], this.readLineCallback)
     })
     this.$electron.ipcRenderer.on('direct-save-file-' + this.modelName, (event, path) => {
       console.log('save to:' + path)
@@ -317,9 +315,9 @@ export default {
     })
     this.$electron.ipcRenderer.on('get-all-config-reply-' + this.modelName, (event, value) => {
       if (value.hasOwnProperty('linkingDefaultPath')) {
-        this.srcFilePath = value.linkingDefaultPath
-        if (this.srcFilePath) {
-          this.readFileToArr(this.srcFilePath, this.readLineCallback)
+        if (value.linkingDefaultPath) {
+          this.pageLoading = true
+          this.readFileToArr(this, value.linkingDefaultPath, this.readLineCallback)
         }
       }
       if (value.hasOwnProperty('kgUrl')) {
@@ -346,17 +344,17 @@ export default {
     width: 100%;
     margin: 10px 0;
   }
-  .open-block {
-    padding-left: 30px;
-  }
   .jump-index {
     margin-top: 10px;
-    margin-left: 20px;
+    .index-input {
+      width: 120px;
+    }
   }
   .sen-block {
     text-align: center;
+    margin: 15px 0;
     .sen {
-      border: 1px solid #eee;
+      border: 1px solid #CCC;
       border-radius: 10px;
       padding: 10px;
     }
@@ -364,21 +362,17 @@ export default {
       text-align: left;
     }
     .sen-btn {
-      margin-top: 10px;
-    }
-    .sen-ai {
-      text-align: center;
-      margin-top: 70px;
+      margin-top: 4px;
     }
   }
   .entity-block {
     border: 1px solid #EEE;
     border-radius: 10px;
     padding: 20px;
-    height: 14vw;
+    height: 318px;
     overflow-y: auto;
     .entity-auto-complete {
-      width: 85%;
+      width: 65%;
     }
   }
 }
