@@ -10,7 +10,7 @@
         <el-button v-else size="mini" type="primary" @click="openFile">打开.na文件</el-button>
         <el-button size="mini" type="warning" @click="onSubmit">保存</el-button>
         <el-button size="mini" type="warning" @click="onSaveAs">另存为</el-button>
-        <el-button size="mini" type="danger" @click="onDel">清除链接</el-button>
+        <!-- <el-button size="mini" type="danger" @click="onDel">清除关系</el-button> -->
         <el-button size="mini" type="success" @click="aiAssist">智能协助</el-button>
       </div>
     </el-card>
@@ -51,6 +51,7 @@
               <span class="ndes">{{ item.relationName }}</span>
             </template>
           </el-autocomplete>
+          <el-tag v-if="senList[curIndex] && senList[curIndex].dr.indexOf(item.leftPos + ',' + item.rightPos) > -1" type="warning">多关系</el-tag>
         </el-form-item>
       </el-form>
     </el-card>

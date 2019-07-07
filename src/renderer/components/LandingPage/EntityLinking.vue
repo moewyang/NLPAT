@@ -47,6 +47,7 @@
               <span class="ndes">{{ item.description }}</span>
             </template>
           </el-autocomplete>
+          <el-tag v-if="senList[curIndex] && senList[curIndex].dw.indexOf(item.pos) > -1" type="warning">歧义词</el-tag>
         </el-form-item>
       </el-form>
     </el-card>
@@ -95,7 +96,8 @@ export default {
       kgUrl: 'http://localhost:7474/db/data/transaction/commit',
       kgAuthCode: 'bmVvNGo6MjA4MDI5OTE=',
       curNum: 1,
-      isOnSubmit: false
+      isOnSubmit: false,
+      dw_list: []
     }
   },
   watch: {
@@ -268,9 +270,9 @@ export default {
         for (var i = 0; i < itemJson.entities.length; i++) {
           entityList.push({
             id: i + 1,
+            pos: itemJson.entities[i].pos,
             name: itemJson.entities[i].word,
             type: itemJson.entities[i].type,
-            // description: this.senList[index].hasOwnProperty('links') ? this.senList[index].links[i] : ''
             description: itemJson.entities[i].link === 'none' ? '' : itemJson.entities[i].link
           })
         }
