@@ -1,5 +1,5 @@
 <template>
-  <div class="setting-page">
+  <div class="toolkit-page">
     <el-tabs type="card" v-model="activeName" @tab-click="handleTabClick">
       <el-tab-pane label="文件格式转化" name="tab-1">
         <el-card shadow="always">
@@ -59,65 +59,69 @@
         </el-card>
       </el-tab-pane>
       <el-tab-pane label="分词/词性标注/实体识别/链接" name="tab-4">
+        <div class="tip" v-if="tip" v-html="tip"></div>
         <el-card shadow="always">
-          <div class="toolkit-page">
-            <p>① 打开句子文件</p>
-            <div class="block open-block">
-              <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
-              <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
-            </div>
-            <p>② 查看句子</p>
-            <el-row>
-              <el-col :span="6">
-                <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> / {{listLen}}</div>
-              </el-col>
-            </el-row>
-            <el-row class="block sen-block" id="sen-block">
-              <el-col :span="2">
-                <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
-              </el-col>
-              <el-col class="sen-wrapper" :span="20">
-                <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="senList[curIndex].string"></el-input>
-                <div v-else class="sen">暂无内容</div>
-              </el-col>
-              <el-col :span="2">
-                <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
-              </el-col>
-            </el-row>
-            <p>③ 识别结果</p>
-            <div el-input type="text" v-html="nlpResult"></div>
+          <div>
+            <el-tooltip v-if="srcFilePath" effect="light" placement="top-start">
+              <el-button size="mini" type="primary" @click="openFile">打开.na文件</el-button>
+              <div slot="content">当前文件路径:{{ srcFilePath }}</div>
+            </el-tooltip>
+            <el-button v-else size="mini" type="primary" @click="openFile">打开.na文件</el-button>
           </div>
+        </el-card>
+        <br>
+        <el-card shadow="always" v-loading="pageLoading">
+          <div>
+            <span>当前</span>
+            <span class="jump-index" v-if="listLen !== 0">第 <el-input-number class="index-input" v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> 句&nbsp;&nbsp;共{{listLen}}句</span>
+          </div>
+          <el-row class="block sen-block">
+            <el-col :span="2">
+              <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
+            </el-col>
+            <el-col class="sen-wrapper" :span="20">
+              <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="senList[curIndex].string"></el-input>
+              <div v-else class="sen">暂无内容</div>
+            </el-col>
+            <el-col :span="2">
+              <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
+            </el-col>
+          </el-row>
+          <p>识别结果</p>
+          <div el-input type="text" v-html="nlpResult"></div>
         </el-card>
       </el-tab-pane>
       <el-tab-pane label="信息抽取" name="tab-5">
+        <div class="tip" v-if="tip" v-html="tip"></div>
         <el-card shadow="always">
-          <div class="toolkit-page">
-            <p>① 打开句子文件</p>
-            <div class="block open-block">
-              <el-button size="mini" type="primary" @click="openFile">打开NA文件</el-button>
-              <div v-if="srcFilePath" class="el-upload__tip">当前打开文件路径：{{ srcFilePath }}</div>
-            </div>
-            <p>② 查看句子</p>
-            <el-row>
-              <el-col :span="6">
-                <div class="jump-index" v-if="listLen !== 0"><el-input-number v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> / {{listLen}}</div>
-              </el-col>
-            </el-row>
-            <el-row class="block sen-block" id="sen-block">
-              <el-col :span="2">
-                <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
-              </el-col>
-              <el-col class="sen-wrapper" :span="20">
-                <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="senList[curIndex].string"></el-input>
-                <div v-else class="sen">暂无内容</div>
-              </el-col>
-              <el-col :span="2">
-                <el-button class="sen-btn" type="primary" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
-              </el-col>
-            </el-row>
-            <p>③ 识别结果</p>
-            <div el-input type="text" v-html="nlpResult"></div>
+          <div>
+            <el-tooltip v-if="srcFilePath" effect="light" placement="top-start">
+              <el-button size="mini" type="primary" @click="openFile">打开.na文件</el-button>
+              <div slot="content">当前文件路径:{{ srcFilePath }}</div>
+            </el-tooltip>
+            <el-button v-else size="mini" type="primary" @click="openFile">打开.na文件</el-button>
           </div>
+        </el-card>
+        <br>
+        <el-card shadow="always" v-loading="pageLoading">
+          <div>
+            <span>当前</span>
+            <span class="jump-index" v-if="listLen !== 0">第 <el-input-number class="index-input" v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> 句&nbsp;&nbsp;共{{listLen}}句</span>
+          </div>
+          <el-row class="block sen-block">
+            <el-col :span="2">
+              <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
+            </el-col>
+            <el-col class="sen-wrapper" :span="20">
+              <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="senList[curIndex].string"></el-input>
+              <div v-else class="sen">暂无内容</div>
+            </el-col>
+            <el-col :span="2">
+              <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-right" circle @click="next()"></el-button>
+            </el-col>
+          </el-row>
+          <p>识别结果</p>
+          <div el-input type="text" v-html="nlpResult"></div>
         </el-card>
       </el-tab-pane>
     </el-tabs>
@@ -129,6 +133,8 @@ const readline = require('readline')
 export default {
   data () {
     return {
+      pageLoading: false,
+      tip: '',
       modelName: 'toolkit',
       srcFilePath: '',
       waitSwitchFilePath: '',
@@ -277,6 +283,8 @@ export default {
     handleTabClick () {
       this.curIndex = 0
       this.nlpResult = ''
+      this.tip = ''
+      this.pageLoading = false
     },
     openFile () {
       console.log('open-file')
@@ -320,6 +328,8 @@ export default {
       this.listLen = 0
       this.senList = []
       this.srcFilePath = ''
+      this.pageLoading = false
+      this.tip = ''
     }
   },
   mounted () {
@@ -376,7 +386,7 @@ export default {
       text-align: left;
     }
     .sen-btn {
-      margin-top: 10px;
+      margin-top: 4px;
     }
   }
 }
