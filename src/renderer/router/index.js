@@ -31,6 +31,10 @@ export default new Router({
           component: require('@/components/LandingPage/EntityRelationship').default
         },
         {
+          path: 'ai-annotation',
+          component: require('@/components/LandingPage/AIAnnotation').default
+        },
+        {
           path: 'toolkit',
           component: require('@/components/LandingPage/Toolkit').default
         },
