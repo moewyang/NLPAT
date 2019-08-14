@@ -1,6 +1,7 @@
 'use strict'
 
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { PythonShell } from 'python-shell'
 const config = require('electron-json-config')
 
 /**
@@ -35,6 +36,13 @@ function createWindow () {
 
   mainWindow.on('closed', () => {
     mainWindow = null
+  })
+
+  PythonShell.run(require('path').join(__dirname, '../../static/py/hello.py'), null, function (err, result) {
+    if (err) {
+      throw err
+    }
+    console.log(result)
   })
 }
 

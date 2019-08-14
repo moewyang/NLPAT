@@ -25,14 +25,43 @@
           <el-button type="primary" @click="onSet">设置</el-button>
         </el-card>
       </el-tab-pane>
-      <el-tab-pane label="实体标注类型">
+      <el-tab-pane label="实体标注类型" class="tagging-type">
         <el-card shadow="always">
-          <div>默认标注类型参照CoNLL2003，实体被标注为四种类型：</div>
           <div>
-            <p>LOC (location, 地名)</p>
-            <p>ORG (organisation， 组织机构名)</p>
-            <p>PER （person， 人名）</p>
-            <p>MISC (miscellaneous， 其他)</p>
+            <strong>默认标注类型参照CoNLL2003，实体被标注为四种类型：</strong>
+            <ul class="default-list">
+              <li>LOC (location, 地名)</li>
+              <li>ORG (organisation， 组织机构名)</li>
+              <li>PER （person， 人名）</li>
+              <li>MISC (miscellaneous， 其他)</li>
+            </ul>
+          </div>
+          <div class="set-type">
+            <strong>设置标注类型：</strong>
+            <el-row :gutter="20">
+              <el-col :span="11">
+                标注值
+              </el-col>
+              <el-col :span="11">
+                标注描述
+              </el-col>
+            </el-row>
+            <el-row :gutter="20" v-for="(item, i) in typeOptions" :key="i">
+              <el-col :span="11">
+                <el-input v-model="item.value"></el-input>
+              </el-col>
+              <el-col :span="11">
+                <el-input v-model="item.label"></el-input>
+              </el-col>
+              <el-col :span="2">
+                <el-button icon="el-icon-close" circle @click="delLine(i)"></el-button>
+              </el-col>
+            </el-row>
+          </div>
+          <div class="set-buttons">
+            <el-button size="mini" @click="addLine()">添加一行</el-button>
+            <el-button size="mini" type="warning" @click="updateOptions()">更新</el-button>
+            <el-button size="mini" type="danger" @click="resetOptions()">重置</el-button>
           </div>
         </el-card>
       </el-tab-pane>
@@ -52,7 +81,21 @@ export default {
       form: {
         url: '',
         authCode: ''
-      }
+      },
+      defaltTypeOptions: [{
+        value: 'PER',
+        label: 'PER-person,人名'
+      }, {
+        value: 'ORG',
+        label: 'ORG-organisation,组织机构名'
+      }, {
+        value: 'LOC',
+        label: 'LOC-location, 地名'
+      }, {
+        value: 'MISC',
+        label: 'MISC-miscellaneous,其他'
+      }],
+      typeOptions: []
     }
   },
   created () {
@@ -74,6 +117,30 @@ export default {
     onSet () {
       this.$electron.ipcRenderer.send('set-config', 'kgUrl', this.form.url)
       this.$electron.ipcRenderer.send('set-config', 'kgAuthCode', this.form.authCode)
+    },
+    addLine () {
+      this.typeOptions.push({
+        value: '',
+        label: ''
+      })
+    },
+    delLine (i) {
+      this.typeOptions.splice(i, 1)
+    },
+    updateOptions () {
+      this.$electron.ipcRenderer.send('set-config', 'typeOptions', JSON.stringify(this.typeOptions))
+      this.$message({
+        message: '更新成功',
+        type: 'success'
+      })
+    },
+    resetOptions () {
+      this.typeOptions = this.defaltTypeOptions
+      this.$electron.ipcRenderer.send('set-config', 'typeOptions', JSON.stringify(this.typeOptions))
+      this.$message({
+        message: '重置成功',
+        type: 'success'
+      })
     }
   },
   mounted () {
@@ -100,6 +167,9 @@ export default {
       if (value.hasOwnProperty('kgAuthCode')) {
         this.$set(this.form, 'authCode', value.kgAuthCode)
       }
+      if (value.hasOwnProperty('typeOptions')) {
+        this.typeOptions = JSON.parse(value.typeOptions)
+      }
     })
   }
 }
@@ -122,6 +192,22 @@ export default {
   .el-link {
     font-size: 16px;
     vertical-align: top;
+  }
+  .tagging-type {
+    .default-list {
+      margin-left: 30px;
+    }
+    .set-type {
+      margin-top: 20px;
+      .el-col {
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+    }
+    .set-buttons {
+      float: right;
+      margin: 20px 0;
+    }
   }
 }
 </style>

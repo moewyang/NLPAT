@@ -19,7 +19,7 @@
               <span v-if="waitSwitchFilePath" class="el-upload__tip">当前打开文件路径：{{ waitSwitchFilePath }}</span>
             </el-form-item>
             <el-form-item v-if="waitSwitchFilePath">
-              <el-button size="mini" type="success" @click="onSwitch">转换</el-button>
+              <el-button size="mini" type="success" @click="onSwitch" :loading="isSwitchLoading">转换</el-button>
             </el-form-item>
           </el-form>
         </el-card>
@@ -156,7 +156,8 @@ export default {
       nlpResult: '',
       activeName: 'tab-1',
       actkgUrl: 'http://www.actkg.com',
-      curNum: 1
+      curNum: 1,
+      isSwitchLoading: false
     }
   },
   created () {
@@ -179,22 +180,83 @@ export default {
       this.concatStr = ''
       if (this.activeName === 'tab-1') {
         this.readFileToArr(this.waitSwitchFilePath, (data) => {
+          this.isSwitchLoading = true
           if (this.form1.type === 'txt') {
             this.concatStr = data.map((item) => {
-              return '{"string":"' + item + '","entities":[],"links":[],"relations":[]}'
+              return '{"string":"' + item + '","entities":[],"relations":[],"dw":[],"dr":[]}'
             }).join('\n')
             this.$electron.ipcRenderer.send('save-as-file-dialog', this.modelName)
-          } else if (this.form1.type === 'io') {
-            console.log('io')
-          } else if (this.form1.type === 'bio') {
-            console.log('bio')
-          } else if (this.form1.type === 'bioes') {
-            console.log('bioes')
-          } else if (this.form1.type === 'bmewo') {
-            console.log('bmewo')
+          } else {
+            console.log(this.form1.type)
+            this.concatStr = this.getConcatStr(data, this.form1.type)
+            this.$electron.ipcRenderer.send('save-as-file-dialog', this.modelName)
           }
+          this.isSwitchLoading = false
         })
       }
+    },
+    getConcatStr (data, type) {
+      var dataLen = data.length
+      var resArr = []
+      var sen = ''
+      var senCount = 0
+      var senWords = []
+      var latestWord = ''
+      var latestWordStart = 0
+      var latestTag = ''
+      var latestType = ''
+      for (var i = 0; i < dataLen; i++) {
+        var item = data[i]
+        if (item.trim() === '' && latestTag !== '') {
+          // 句子末尾
+          if (latestTag === 'I') {
+            senWords.push('{"pos":"' + latestWordStart + ',' + senCount + '","word":"' + this.escapeStr(latestWord) + '","type":"' + latestType + '","link":"none"}')
+            latestWord = ''
+            latestWordStart = 0
+            latestType = ''
+          }
+          resArr.push('{"string":"' + this.escapeStr(sen) + '","entities":[' + senWords.join(',') + '],"relations":[],"dw":[],"dr":[]}')
+          sen = ''
+          senCount = 0
+          senWords = []
+          latestTag = ''
+          latestType = ''
+        } else if (item.split(' ')[1] === 'O') {
+          // 无标注
+          if (latestTag === 'I') {
+            senWords.push('{"pos":"' + latestWordStart + ',' + senCount + '","word":"' + this.escapeStr(latestWord) + '","type":"' + latestType + '","link":"none"}')
+            latestWord = ''
+            latestWordStart = 0
+            latestType = ''
+          }
+          sen += item.split(' ')[0]
+          senCount += 1
+          latestTag = 'O'
+        } else {
+          // 有标注
+          var ann = item.split(' ')[1]
+          var tag = ann.split('-')[0]
+          var tp = ann.split('-')[1]
+          if (tag === 'B') {
+            if (latestTag === 'I') {
+              senWords.push('{"pos":"' + latestWordStart + ',' + senCount + '","word":"' + this.escapeStr(latestWord) + '","type":"' + latestType + '","link":"none"}')
+              latestWord = ''
+              latestWordStart = 0
+              latestType = ''
+            }
+            latestType = tp
+            latestWordStart = senCount
+          }
+          latestWord += item.split(' ')[0].trim()
+          sen += item.split(' ')[0].trim()
+          senCount += 1
+          latestTag = tag
+        }
+      }
+      return resArr.join('\n')
+    },
+    escapeStr (str) {
+      return str.replace(/"/g, "'").replace(/\\/g, '')
     },
     onSubmit () {
       this.nlpResult = ''

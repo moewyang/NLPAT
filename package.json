@@ -60,6 +60,7 @@
     "echarts": "^4.2.1",
     "electron-json-config": "^1.5.3",
     "element-ui": "^2.9.1",
+    "python-shell": "^1.0.7",
     "vue": "^2.5.16",
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",

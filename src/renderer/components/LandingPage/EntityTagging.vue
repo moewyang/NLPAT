@@ -375,6 +375,9 @@ export default {
           this.readFileToArr(this, value.tagDefaultPath, this.readLineCallback)
         }
       }
+      if (value.hasOwnProperty('typeOptions')) {
+        this.typeOptions = JSON.parse(value.typeOptions)
+      }
     })
   }
 }
