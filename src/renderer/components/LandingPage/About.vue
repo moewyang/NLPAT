@@ -27,17 +27,20 @@
             </div>
           </el-card>
         </el-tab-pane>
-        <el-tab-pane label="NA格式文件介绍">
+        <el-tab-pane label="NA格式文件介绍" class="na-pane">
           <el-card shadow="always">
             <div class="title"><strong>NA文件</strong></div>
-            <p>NA文件是专用于nlpat软件的“.na”文件格式，该格式文件为基于远程监督KG库的单句标注信息文件。每一行是和一个句子有关的json格式串，具体格式如下：</p>
+            <p>NA文件是专用于nlpat软件的“.na”文件格式，该格式文件为基于远程监督KG库的单句标注信息文件。每一行是和一个句子有关的json格式串，具体每行格式如下：</p>
             <img src="~@/assets/na.png" alt=".an文件格式" width="50%"/>
-            <ul>
+            <ul class="description-list">
               <li>string：原句子</li>
-              <li>entities：实体（start：实体开始位置，end：实体结束位置，word：实体名称，type：实体标注类型</li>
-              <li>links：实体链接（对应KG中的实体id）</li>
+              <li>entities：实体词（pos："实体词开始位置,实体结束位置"，word：实体词，type：标注类型，link：实体链接（对应KG中的实体id）</li>
+              <li>dw：存在歧义实体链接的编号列表，这里编号用实体词pos来表示</li>
               <li>relations：实体关系（表示entity1到entity2的关系，对应KG中的关系id）</li>
-            </ul>
+              <li>dr：存在歧义实体关系的编号列表，这里编号用实体词pos来表示</li>
+            </ul><br>
+            <p>将每句的信息用如上格式表示后，压缩成一行存入na文件</p><br>
+            <p>na文件的特点：有可读性、信息全面、可水平分割、格式转化便利、读取便利、大文件支持</p>
           </el-card>
         </el-tab-pane>
         <el-tab-pane label="系统软件介绍">
@@ -85,5 +88,10 @@
     }
   }
 </script>
-<style>
+<style lang="scss" scoped>
+.na-pane {
+  .description-list {
+    margin-left: 30px;
+  }
+}
 </style>
