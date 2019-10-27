@@ -11,7 +11,7 @@
         <el-button size="mini" type="warning" @click="onSubmit">保存</el-button>
         <el-button size="mini" type="warning" @click="onSaveAs">另存为</el-button>
         <!-- <el-button size="mini" type="danger" @click="onDel">清除关系</el-button> -->
-        <el-button size="mini" type="success" @click="aiAssist">智能协助</el-button>
+        <!-- <el-button size="mini" type="success" @click="aiAssist">智能协助</el-button>-->
       </div>
     </el-card>
     <br>
@@ -19,14 +19,14 @@
       <div>
         <span>当前</span>
         <span class="jump-index" v-if="listLen !== 0">第 <el-input-number class="index-input" v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> 句&nbsp;&nbsp;共{{listLen}}句</span>
-        <span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('relations') ? '已修改' : '未修改'}}）</span>
+        <!--<span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('relations') ? '已修改' : '未修改'}}）</span>-->
       </div>
       <el-row class="block sen-block">
         <el-col :span="2">
           <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
         </el-col>
         <el-col class="sen-wrapper" :span="20">
-          <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="color(senList[curIndex].string)"></el-input>
+          <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="color(senList[curIndex].s)"></el-input>
           <div v-else class="sen">暂无内容</div>
         </el-col>
         <el-col :span="2">
@@ -45,13 +45,16 @@
             <el-tag type="primary">{{ item.rightName }}({{ item.rightNid }})</el-tag>
           </el-badge>
           &nbsp;
-          <el-autocomplete :highlight-first-item="true" class="entity-auto-complete" popper-class="entitiy-pull-down" v-model="item.relation" :fetch-suggestions="querySearchAsync(item.leftNid, item.rightNid)" placeholder="点击获取" clearable>
+          <!--<el-autocomplete :highlight-first-item="true" class="entity-auto-complete" popper-class="entitiy-pull-down" v-model="item.relation" :fetch-suggestions="querySearchAsync(item.leftNid, item.rightNid)" placeholder="点击获取" clearable>
             <template slot-scope="{ item }">
               <div class="nid">{{ item.relationId }}</div>
               <span class="ndes">{{ item.relationName }}</span>
             </template>
-          </el-autocomplete>
-          <el-tag v-if="senList[curIndex] && senList[curIndex].dr.indexOf(item.leftPos + ',' + item.rightPos) > -1" type="warning">多关系</el-tag>
+          </el-autocomplete>-->
+          <el-select size="small" v-model="item.relation" placeholder="请选择" @change="onSelectRelation($event, i)">
+            <el-option v-for="it in relationOptions" :key="it.value" :label="it.label" :value="it.value"></el-option>
+          </el-select>
+          <el-tag v-if="senList[curIndex] && senList[curIndex].dr && senList[curIndex].dr.indexOf(item.leftPos + ',' + item.rightPos) > -1" type="warning">多关系</el-tag>
         </el-form-item>
       </el-form>
     </el-card>
@@ -79,7 +82,12 @@ export default {
       entityPairs: [],
       kgUrl: 'http://localhost:7474/db/data/transaction/commit',
       kgAuthCode: 'bmVvNGo6MjA4MDI5OTE=',
-      curNum: 1
+      curNum: 1,
+      relationOptions: [],
+      fileInfo: {},
+      relationTable: [],
+      typeTable: [],
+      relationType: []
     }
   },
   watch: {
@@ -99,41 +107,48 @@ export default {
     },
     onSubmit () {
       console.log('onSubmit')
-      var relations = this.entityPairs[this.curIndex].map((item) => {
+      var r = this.entityPairs[this.curIndex].filter((item) => {
+        return item.relation !== ''
+      }).map((item) => {
         return {
-          entity1: item.leftNid,
-          entity2: item.rightNid,
-          relation: item.relation
+          i: this.relationTable[1][item.relation],
+          l: item.leftNid,
+          r: item.rightNid
         }
       })
       Object.assign(this.senList[this.curIndex], {
-        relations
+        r
       })
       this.$electron.ipcRenderer.send('save-file', this.srcFilePath, this.modelName)
     },
     onSaveAs () {
       console.log('onSaveAs')
-      var relations = this.entityPairs[this.curIndex].map((item) => {
+      var r = this.entityPairs[this.curIndex].filter((item) => {
+        return item.relation !== ''
+      }).map((item) => {
         return {
-          entity1: item.leftNid,
-          entity2: item.righNid,
-          relation: item.relation
+          i: this.relationTable[1][item.relation],
+          l: item.leftNid,
+          r: item.rightNid
         }
       })
       Object.assign(this.senList[this.curIndex], {
-        relations
+        r
       })
       this.$electron.ipcRenderer.send('save-as-file-dialog', this.modelName)
     },
     onDel () {
       console.log('onDel')
-      if (!this.senList[this.curIndex].hasOwnProperty('relations')) {
+      if (!this.senList[this.curIndex].hasOwnProperty('r')) {
         this.$electron.ipcRenderer.send('show-message', '无需清除')
         return
       } else {
-        delete this.senList[this.curIndex].relations
+        delete this.senList[this.curIndex].r
       }
       this.$electron.ipcRenderer.send('save-file-dialog', this.modelName)
+    },
+    onSelectRelation (ele, i) {
+      this.entityPairs[this.curIndex][i].relation = this.relationTable[0][ele]
     },
     openFile: function () {
       console.log('open-file-dialog')
@@ -172,12 +187,12 @@ export default {
     },
     color (sen) {
       var senArr = sen.split('')
-      var entities = this.senList[this.curIndex].entities
+      var entities = this.senList[this.curIndex].e
       var startIndexList = entities.map((item) => {
-        return item.pos.split(',')[0]
+        return item.p.split(',')[0]
       })
       var endIndexList = entities.map((item) => {
-        return item.pos.split(',')[1]
+        return item.p.split(',')[1]
       })
       for (var i = 0; i < startIndexList.length; i++) {
         senArr[startIndexList[i]] = '<div class="el-badge item"><sup class="el-badge__content el-badge__content--primary is-fixed">' + (i + 1) + '</sup><span style=\'background-color: rgb(216, 236, 255)\'>' + senArr[startIndexList[i]]
@@ -259,6 +274,21 @@ export default {
       }
     },
     readLineCallback (data) {
+      var that = this
+      if (data.length > 0) {
+        this.fileInfo = JSON.parse(data.shift())
+        if (this.fileInfo.sv === '3.0.0' && this.fileInfo.dv === '1.0.0' && this.fileInfo.dn === 4) {
+          this.relationTable = JSON.parse(data.shift())
+          this.typeTable = JSON.parse(data.shift())
+          this.relationType = JSON.parse(data.shift())
+        }
+        this.relationOptions = Object.keys(this.relationTable[1]).map((item) => {
+          return {
+            value: that.relationTable[1][item],
+            label: '(' + that.relationTable[1][item] + ')' + item
+          }
+        })
+      }
       this.listLen = data.length
       this.senList = data.map((item) => {
         return JSON.parse(item)
@@ -266,12 +296,12 @@ export default {
       var validEntity = data.map((item, index) => {
         var entityList = []
         var itemJson = JSON.parse(item)
-        for (var i = 0; i < itemJson.entities.length; i++) {
+        for (var i = 0; i < itemJson.e.length; i++) {
           entityList.push({
             id: i + 1,
-            pos: itemJson.entities[i].pos,
-            name: itemJson.entities[i].word,
-            nid: itemJson.entities[i].link
+            pos: itemJson.e[i].p,
+            name: itemJson.s.substring(itemJson.e[i].p.split(',')[0], itemJson.e[i].p.split(',')[1]),
+            nid: itemJson.e[i].l
           })
         }
         return entityList
@@ -282,6 +312,9 @@ export default {
           for (var j = 0; j < validEntity[k].length; ++j) {
             var leftNid = validEntity[k][i].nid
             var rightNid = validEntity[k][j].nid
+            if (leftNid === rightNid) {
+              continue
+            }
             if (i !== j && leftNid !== 'none' && rightNid !== 'none') {
               pair.push({
                 leftId: validEntity[k][i].id,
@@ -292,7 +325,7 @@ export default {
                 rightName: validEntity[k][j].name,
                 leftNid,
                 rightNid,
-                relation: this.senList[k].hasOwnProperty('relations') ? this.findRelation(this.senList[k].relations, validEntity[k][i].pos, validEntity[k][j].pos) : ''
+                relation: this.senList[k].hasOwnProperty('r') ? this.findRelation(this.senList[k].r, validEntity[k][i].pos, validEntity[k][j].pos) : ''
               })
             }
           }
@@ -302,9 +335,9 @@ export default {
       this.pageLoading = false
     },
     findRelation (relations, leftPos, rightPos) {
-      for (var i in relations) {
-        if (relations[i].entity1 === leftPos && relations[i].entity2 === rightPos) {
-          return relations[i].relation
+      for (var m in relations) {
+        if (relations[m].l === leftPos && relations[m].r === rightPos) {
+          return this.relationTable[0][relations[m].i]
         }
       }
       return ''
@@ -316,6 +349,10 @@ export default {
       this.relations = []
       this.entityPairs = []
       this.srcFilePath = ''
+      this.fileInfo = {}
+      this.relationTable = []
+      this.typeTable = []
+      this.relationType = []
     }
   },
   mounted () {
@@ -328,9 +365,14 @@ export default {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
-      }).join('\n')
+      })
+      output.unshift(JSON.stringify(this.relationType))
+      output.unshift(JSON.stringify(this.typeTable))
+      output.unshift(JSON.stringify(this.relationTable))
+      this.fileInfo.ut = (new Date().getTime()) + ''
+      output.unshift(JSON.stringify(this.fileInfo))
       var that = this
-      fs.writeFile(path, output, () => {
+      fs.writeFile(path, output.join('\n'), () => {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
@@ -338,9 +380,14 @@ export default {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
-      }).join('\n')
+      })
+      output.unshift(JSON.stringify(this.relationType))
+      output.unshift(JSON.stringify(this.typeTable))
+      output.unshift(JSON.stringify(this.relationTable))
+      this.fileInfo.ut = (new Date().getTime()) + ''
+      output.unshift(JSON.stringify(this.fileInfo))
       var that = this
-      fs.writeFile(path, output, () => {
+      fs.writeFile(path, output.join('\n'), () => {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })

@@ -10,7 +10,7 @@
         <el-button v-else size="mini" type="primary" @click="openFile">打开.na文件</el-button>
         <el-button size="mini" type="warning" @click="onSubmit">保存</el-button>
         <el-button size="mini" type="warning" @click="onSaveAs">另存为</el-button>
-        <el-button size="mini" type="success" @click="aiAssist">智能协助</el-button>
+        <!--<el-button size="mini" type="success" @click="aiAssist">智能协助</el-button>-->
       </div>
     </el-card>
     <br>
@@ -18,14 +18,14 @@
       <div>
         <span>当前</span>
         <span class="jump-index" v-if="listLen !== 0">第 <el-input-number class="index-input" v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> 句&nbsp;&nbsp;共{{listLen}}句</span>
-        <span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('links') ? '已修改' : '未修改'}}）</span>
+        <!--<span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('links') ? '已修改' : '未修改'}}）</span>-->
       </div>
       <el-row class="block sen-block">
         <el-col :span="2">
           <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
         </el-col>
         <el-col class="sen-wrapper" :span="20">
-          <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="color(senList[curIndex].string)"></el-input>
+          <el-input type="text" v-if="senList[curIndex]" class="sen" v-html="color(senList[curIndex].s)"></el-input>
           <div v-else class="sen">暂无内容</div>
         </el-col>
         <el-col :span="2">
@@ -47,7 +47,7 @@
               <span class="ndes">{{ item.description }}</span>
             </template>
           </el-autocomplete>
-          <el-tag v-if="senList[curIndex] && senList[curIndex].dw.indexOf(item.pos) > -1" type="warning">歧义词</el-tag>
+          <el-tag v-if="senList[curIndex] && senList[curIndex].dw && senList[curIndex].dw.indexOf(item.p) > -1" type="warning">歧义词</el-tag>
         </el-form-item>
       </el-form>
     </el-card>
@@ -97,7 +97,11 @@ export default {
       kgAuthCode: 'bmVvNGo6MjA4MDI5OTE=',
       curNum: 1,
       isOnSubmit: false,
-      dw_list: []
+      dw_list: [],
+      fileInfo: {},
+      relationTable: [],
+      typeTable: [],
+      relationType: []
     }
   },
   watch: {
@@ -176,12 +180,12 @@ export default {
     },
     color (sen) {
       var senArr = sen.split('')
-      var entities = this.senList[this.curIndex].entities
+      var entities = this.senList[this.curIndex].e
       var startIndexList = entities.map((item) => {
-        return item.pos.split(',')[0]
+        return item.p.split(',')[0]
       })
       var endIndexList = entities.map((item) => {
-        return item.pos.split(',')[1]
+        return item.p.split(',')[1]
       })
       for (var i = 0; i < startIndexList.length; i++) {
         senArr[startIndexList[i]] = '<div class="el-badge item"><sup class="el-badge__content el-badge__content--primary is-fixed">' + (i + 1) + '</sup><span style=\'background-color: rgb(216, 236, 255)\'>' + senArr[startIndexList[i]]
@@ -260,20 +264,35 @@ export default {
       }
     },
     readLineCallback (data) {
+      var that = this
+      if (data.length > 0) {
+        this.fileInfo = JSON.parse(data.shift())
+        if (this.fileInfo.sv === '3.0.0' && this.fileInfo.dv === '1.0.0' && this.fileInfo.dn === 4) {
+          this.relationTable = JSON.parse(data.shift())
+          this.typeTable = JSON.parse(data.shift())
+          this.relationType = JSON.parse(data.shift())
+        }
+      }
       this.listLen = data.length
       this.senList = data.map((item) => {
-        return JSON.parse(item)
+        var line = JSON.parse(item)
+        line.e.map((it) => {
+          Object.assign(it, {
+            'name': '(' + it.t + ')' + that.typeTable[0][it.t]
+          })
+        })
+        return line
       })
       this.entities = data.map((item, index) => {
         var entityList = []
         var itemJson = JSON.parse(item)
-        for (var i = 0; i < itemJson.entities.length; i++) {
+        for (var i = 0; i < itemJson.e.length; i++) {
           entityList.push({
             id: i + 1,
-            pos: itemJson.entities[i].pos,
-            name: itemJson.entities[i].word,
-            type: itemJson.entities[i].type,
-            description: itemJson.entities[i].link === 'none' ? '' : itemJson.entities[i].link
+            pos: itemJson.e[i].p,
+            name: itemJson.s.substring(itemJson.e[i].p.split(',')[0], itemJson.e[i].p.split(',')[1]),
+            type: that.typeTable[0][itemJson.e[i].t],
+            description: itemJson.e[i].l === 'none' ? '' : itemJson.e[i].l
           })
         }
         return entityList
@@ -286,6 +305,10 @@ export default {
       this.senList = []
       this.descriptions = []
       this.srcFilePath = ''
+      this.fileInfo = {}
+      this.relationTable = []
+      this.typeTable = []
+      this.relationType = []
     }
   },
   mounted () {
@@ -298,9 +321,14 @@ export default {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
-      }).join('\n')
+      })
+      output.unshift(JSON.stringify(this.relationType))
+      output.unshift(JSON.stringify(this.typeTable))
+      output.unshift(JSON.stringify(this.relationTable))
+      this.fileInfo.ut = (new Date().getTime()) + ''
+      output.unshift(JSON.stringify(this.fileInfo))
       var that = this
-      fs.writeFile(path, output, () => {
+      fs.writeFile(path, output.join('\n'), () => {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
       this.isOnSubmit = false
@@ -309,9 +337,14 @@ export default {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
-      }).join('\n')
+      })
+      output.unshift(JSON.stringify(this.relationType))
+      output.unshift(JSON.stringify(this.typeTable))
+      output.unshift(JSON.stringify(this.relationTable))
+      this.fileInfo.ut = (new Date().getTime()) + ''
+      output.unshift(JSON.stringify(this.fileInfo))
       var that = this
-      fs.writeFile(path, output, () => {
+      fs.writeFile(path, output.join('\n'), () => {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })

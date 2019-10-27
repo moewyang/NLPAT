@@ -11,7 +11,7 @@
         <el-button size="mini" type="warning" @click="onSubmit">保存</el-button>
         <el-button size="mini" type="warning" @click="onSaveAs">另存为</el-button>
         <el-button size="mini" type="warning" @click="exportDialogVisible = true">导出</el-button>
-        <el-button size="mini" type="success" @click="aiAssist">智能协助</el-button>
+        <!--<el-button size="mini" type="success" @click="aiAssist">智能协助</el-button>-->
       </div>
     </el-card>
     <br>
@@ -21,15 +21,15 @@
       <div>
         <span>当前</span>
         <span class="jump-index" v-if="listLen !== 0">第 <el-input-number class="index-input" v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> 句&nbsp;&nbsp;共{{listLen}}句</span>
-        <span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('links') ? '已修改' : '未修改'}}）</span>
+        <!--<span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('links') ? '已修改' : '未修改'}}）</span>-->
       </div>
       <el-row class="block sen-block" id="sen-block">
         <el-col :span="2">
           <el-button class="sen-btn" type="default" size="medium" icon="el-icon-d-arrow-left" circle @click="pre()"></el-button>
         </el-col>
         <el-col class="sen-wrapper" :span="20">
-          <el-input type="text" v-if="isEdit && senList[curIndex]" class="sen" v-html="senList[curIndex].string" @mouseup.native="getSelectedContents" @mouseleave.native="isEdit = false"></el-input>
-          <el-input type="text" v-else-if="!isEdit && senList[curIndex]" class="sen" v-html="color(senList[curIndex].string)" @mouseenter.native="isEdit = true"></el-input>
+          <el-input type="text" v-if="isEdit && senList[curIndex]" class="sen" v-html="senList[curIndex].s" @mouseup.native="getSelectedContents" @mouseleave.native="isEdit = false"></el-input>
+          <el-input type="text" v-else-if="!isEdit && senList[curIndex]" class="sen" v-html="color(senList[curIndex].s)" @mouseenter.native="isEdit = true"></el-input>
           <div v-else class="sen">暂无内容</div>
         </el-col>
         <el-col :span="2">
@@ -38,13 +38,13 @@
       </el-row>
       <p>标注实体类别:</p>
       <el-form v-if="senList[curIndex]" class="block entity-block" ref="form" label-width="40px" label-position="left">
-        <el-form-item v-for="(item, i) in senList[curIndex].entities" v-bind:key="i" label-width="0">
+        <el-form-item v-for="(item, i) in senList[curIndex].e" v-bind:key="i" label-width="0">
           <el-badge :value="i + 1" type="primary">
-            <el-tag type="primary">{{ item.word }}</el-tag>
+            <el-tag type="primary">{{ senList[curIndex].s.substring(item.p.split(',')[0], item.p.split(',')[1]) }}</el-tag>
           </el-badge>
           &nbsp;
-          <el-select size="small" v-model="item.type" placeholder="请选择">
-            <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+          <el-select size="small" v-model="item.t" placeholder="请选择">
+            <el-option v-for="it in typeOptions" :key="it.value" :label="it.label" :value="it.value"></el-option>
           </el-select>
           <el-button size="mini" type="default" icon="el-icon-close" circle @click="onDelEntity(i)"></el-button>
         </el-form-item>
@@ -109,7 +109,11 @@ export default {
       }],
       exportStr: '',
       seperate: '\t',
-      curNum: 1
+      curNum: 1,
+      fileInfo: {},
+      relationTable: [],
+      typeTable: [],
+      relationType: []
     }
   },
   watch: {
@@ -149,6 +153,10 @@ export default {
         startTag = 'I-'
         insideTag = 'I-'
         endTag = 'I-'
+      } else if (this.exportType === 'BIO') {
+        startTag = 'B-'
+        insideTag = 'I-'
+        endTag = 'I-'
       } else if (this.exportType === 'BMEWO') {
         startTag = 'B-'
         insideTag = 'M-'
@@ -160,16 +168,16 @@ export default {
         singleTag = 'S-'
       }
       this.exportStr = this.senList.map((item) => {
-        var wordList = item.string.pos.split('')
-        var entities = item.entities.sort((item1, item2) => {
-          return item1.pos.split(',')[0] > item2.pos.split(',')[0]
+        var wordList = item.s.split('')
+        var entities = item.e.sort((item1, item2) => {
+          return item1.p.split(',')[0] > item2.p.split(',')[0]
         }).map(x => x)
         var isInside = false
         var curEntity = entities.shift()
         if (curEntity !== undefined) {
-          var curStart = curEntity.pos.split(',')[0]
-          var curEnd = curEntity.pos.split(',')[1] - 1
-          var curType = curEntity.type
+          var curStart = parseInt(curEntity.p.split(',')[0])
+          var curEnd = parseInt(curEntity.p.split(',')[1]) - 1
+          var curType = curEntity.t
         }
         return wordList.map((wordItem, index) => {
           if (curEntity !== undefined) {
@@ -182,12 +190,13 @@ export default {
             } else if (index === curEnd) {
               isInside = false
               curEntity = entities.shift()
+              var ret = wordItem + that.seperate + endTag + curType
               if (curEntity !== undefined) {
-                curStart = curEntity.pos.split(',')[0]
-                curEnd = curEntity.pos.split(',')[1] - 1
-                curType = curEntity.type
+                curStart = parseInt(curEntity.p.split(',')[0])
+                curEnd = parseInt(curEntity.p.split(',')[1]) - 1
+                curType = curEntity.t
               }
-              return wordItem + that.seperate + endTag + curType
+              return ret
             } else if (isInside) {
               return wordItem + that.seperate + insideTag + curType
             } else {
@@ -203,7 +212,7 @@ export default {
     },
     onDelEntity (i) {
       console.log('onDelEntity')
-      this.senList[this.curIndex].entities.splice(i, 1)
+      this.senList[this.curIndex].e.splice(i, 1)
     },
     openFile: function () {
       console.log('open-file-dialog')
@@ -242,12 +251,12 @@ export default {
     },
     color (sen) {
       var senArr = sen.split('')
-      var entities = this.senList[this.curIndex].entities
+      var entities = this.senList[this.curIndex].e
       var startIndexList = entities.map((item) => {
-        return item.pos.split(',')[0]
+        return item.p.split(',')[0]
       })
       var endIndexList = entities.map((item) => {
-        return item.pos.split(',')[1]
+        return item.p.split(',')[1]
       })
       for (var i = 0; i < startIndexList.length; i++) {
         senArr[startIndexList[i]] = '<div class="el-badge item"><sup class="el-badge__content el-badge__content--primary is-fixed">' + (i + 1) + '</sup><span style=\'background-color: rgb(216, 236, 255)\'>' + senArr[startIndexList[i]]
@@ -262,6 +271,21 @@ export default {
       return senArr.join('')
     },
     readLineCallback (data) {
+      var that = this
+      if (data.length > 0) {
+        this.fileInfo = JSON.parse(data.shift())
+        if (this.fileInfo.sv === '3.0.0' && this.fileInfo.dv === '1.0.0' && this.fileInfo.dn === 4) {
+          this.relationTable = JSON.parse(data.shift())
+          this.typeTable = JSON.parse(data.shift())
+          this.relationType = JSON.parse(data.shift())
+        }
+        this.typeOptions = Object.keys(this.typeTable[1]).map((item) => {
+          return {
+            value: that.typeTable[1][item],
+            label: '(' + that.typeTable[1][item] + ')' + item
+          }
+        })
+      }
       this.listLen = data.length
       this.senList = data.map((item) => {
         return JSON.parse(item)
@@ -273,6 +297,10 @@ export default {
       this.listLen = 0
       this.senList = []
       this.srcFilePath = ''
+      this.fileInfo = {}
+      this.relationTable = []
+      this.typeTable = []
+      this.relationType = []
     },
     getSelectedContents () {
       this.isEdit = true
@@ -286,12 +314,12 @@ export default {
         if (selectionStr.length > 0) {
           var selectStartIndex = selection.anchorOffset
           var selectEndIndex = selection.focusOffset
-          var entities = this.senList[this.curIndex].entities
+          var entities = this.senList[this.curIndex].e
           var startIndexList = entities.map((item) => {
-            return item.pos.split(',')[0]
+            return item.p.split(',')[0]
           })
           var endIndexList = entities.map((item) => {
-            return item.pos.split(',')[1]
+            return item.p.split(',')[1]
           })
           // check cross
           for (var i = 0; i < startIndexList.length; i++) {
@@ -303,9 +331,9 @@ export default {
               return
             }
           }
-          this.senList[this.curIndex].entities.push({'pos': selectStartIndex + ',' + selectEndIndex, 'word': selectionStr, 'type': 'MISC'})
-          this.senList[this.curIndex].entities.sort((item1, item2) => {
-            return item1.pos.split(',')[0] > item2.pos.split(',')[0]
+          this.senList[this.curIndex].e.push({'p': selectStartIndex + ',' + selectEndIndex, 't': -1})
+          this.senList[this.curIndex].e.sort((item1, item2) => {
+            return item1.p.split(',')[0] > item2.p.split(',')[0]
           })
           // let range = window.getSelection().getRangeAt(0)
           // let container = document.createElement('span')
@@ -345,9 +373,14 @@ export default {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
-      }).join('\n')
+      })
+      output.unshift(JSON.stringify(this.relationType))
+      output.unshift(JSON.stringify(this.typeTable))
+      output.unshift(JSON.stringify(this.relationTable))
+      this.fileInfo.ut = (new Date().getTime()) + ''
+      output.unshift(JSON.stringify(this.fileInfo))
       var that = this
-      fs.writeFile(path, output, () => {
+      fs.writeFile(path, output.join('\n'), () => {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
@@ -355,9 +388,14 @@ export default {
       console.log('save to:' + path)
       var output = this.senList.map((item) => {
         return JSON.stringify(item)
-      }).join('\n')
+      })
+      output.unshift(JSON.stringify(this.relationType))
+      output.unshift(JSON.stringify(this.typeTable))
+      output.unshift(JSON.stringify(this.relationTable))
+      this.fileInfo.ut = (new Date().getTime()) + ''
+      output.unshift(JSON.stringify(this.fileInfo))
       var that = this
-      fs.writeFile(path, output, () => {
+      fs.writeFile(path, output.join('\n'), () => {
         that.$electron.ipcRenderer.send('show-message', '保存成功')
       })
     })
@@ -375,9 +413,9 @@ export default {
           this.readFileToArr(this, value.tagDefaultPath, this.readLineCallback)
         }
       }
-      if (value.hasOwnProperty('typeOptions')) {
-        this.typeOptions = JSON.parse(value.typeOptions)
-      }
+      // if (value.hasOwnProperty('typeOptions')) {
+      //   this.typeOptions = JSON.parse(value.typeOptions)
+      // }
     })
   }
 }

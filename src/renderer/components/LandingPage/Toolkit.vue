@@ -8,10 +8,10 @@
             <el-form-item label="文件格式">
               <el-radio-group v-model="form1.type">
                 <el-radio label="txt">一句话一行的文本</el-radio>
-                <el-radio label="io">IO</el-radio>
+                <el-radio label="io" disabled>IO</el-radio>
                 <el-radio label="bio">BIO</el-radio>
-                <el-radio label="bioes">BIOES</el-radio>
-                <el-radio label="bmewo">BMEWO</el-radio>
+                <el-radio label="bioes" disabled>BIOES</el-radio>
+                <el-radio label="bmewo" disabled>BMEWO</el-radio>
               </el-radio-group>
             </el-form-item>
             <el-form-item label="文件地址">
@@ -130,6 +130,7 @@
 <script>
 const fs = require('fs')
 const readline = require('readline')
+const uuid = require('uuid')
 export default {
   data () {
     return {
@@ -157,7 +158,24 @@ export default {
       activeName: 'tab-1',
       actkgUrl: 'http://www.actkg.com',
       curNum: 1,
-      isSwitchLoading: false
+      isSwitchLoading: false,
+      defaultHeaderInfo: {
+        sv: '3.0.0',
+        id: '',
+        lid: '',
+        dv: '1.0.0',
+        ca: 'moewyang',
+        ct: '',
+        ua: 'moewyang',
+        ut: '',
+        dn: 4,
+        ol: 'offline',
+        db: ''
+      },
+      defaultHeaderTable: [
+        '[{"1":"毕业院校","2":"父亲","3":"作者","4":"母亲","5":"身高","6":"出生地","7":"主角","8":"妻子","9":"编剧","10":"歌手","11":"丈夫","12":"创始人","13":"民族","14":"祖籍","15":"制片人","16":"董事长","17":"作词","18":"导演","19":"作曲","20":"嘉宾","21":"主持人","22":"主演","23":"国籍","24":"出生日期"},{"毕业院校":1,"父亲":2,"作者":3,"母亲":4,"身高":5,"出生地":6,"主角":7,"妻子":8,"编剧":9,"歌手":10,"丈夫":11,"创始人":12,"民族":13,"祖籍":14,"制片人":15,"董事长":16,"作词":17,"导演":18,"作曲":19,"嘉宾":20,"主持人":21,"主演":22,"国籍":23,"出生日期":24}]',
+        '[{"1":"人物","2":"日期","3":"地点","4":"数字","5":"企业","6":"国家","7":"学校","8":"民族名称","9":"图书","10":"影视作品","11":"歌曲","12":"电视综艺","13":"小说"},{"人物":1,"日期":2,"地点":3,"数字":4,"企业":5,"国家":6,"学校":7,"民族名称":8,"图书":9,"影视作品":10,"歌曲":11,"电视综艺":12,"小说":13}]'
+      ]
     }
   },
   created () {
@@ -181,14 +199,21 @@ export default {
       if (this.activeName === 'tab-1') {
         this.readFileToArr(this.waitSwitchFilePath, (data) => {
           this.isSwitchLoading = true
+          var { ...headerInfo } = this.defaultHeaderInfo
+          headerInfo.id = uuid.v1().replace(/-/g, '')
+          var nowTime = (new Date().getTime()) + ''
+          headerInfo.ct = nowTime
+          headerInfo.ut = nowTime
+          this.concatStr += JSON.stringify(headerInfo) + '\n'
+          this.concatStr += this.defaultHeaderTable.join('\n') + '\n'
           if (this.form1.type === 'txt') {
-            this.concatStr = data.map((item) => {
-              return '{"string":"' + item + '","entities":[],"relations":[],"dw":[],"dr":[]}'
+            this.concatStr += data.map((item) => {
+              return '{"s":"' + item + '","e":[],"r":[],"dw":[],"dr":[]}'
             }).join('\n')
             this.$electron.ipcRenderer.send('save-as-file-dialog', this.modelName)
           } else {
             console.log(this.form1.type)
-            this.concatStr = this.getConcatStr(data, this.form1.type)
+            this.concatStr += this.getConcatStr(data, this.form1.type)
             this.$electron.ipcRenderer.send('save-as-file-dialog', this.modelName)
           }
           this.isSwitchLoading = false
@@ -201,7 +226,6 @@ export default {
       var sen = ''
       var senCount = 0
       var senWords = []
-      var latestWord = ''
       var latestWordStart = 0
       var latestTag = ''
       var latestType = ''
@@ -210,45 +234,41 @@ export default {
         if (item.trim() === '' && latestTag !== '') {
           // 句子末尾
           if (latestTag === 'I') {
-            senWords.push('{"pos":"' + latestWordStart + ',' + senCount + '","word":"' + this.escapeStr(latestWord) + '","type":"' + latestType + '","link":"none"}')
-            latestWord = ''
+            senWords.push('{"p":"' + latestWordStart + ',' + senCount + '","t":' + latestType + ',"l":"-1"}')
             latestWordStart = 0
             latestType = ''
           }
-          resArr.push('{"string":"' + this.escapeStr(sen) + '","entities":[' + senWords.join(',') + '],"relations":[],"dw":[],"dr":[]}')
+          resArr.push('{"s":"' + this.escapeStr(sen) + '","e":[' + senWords.join(',') + '],"r":[],"dw":[],"dr":[]}')
           sen = ''
           senCount = 0
           senWords = []
           latestTag = ''
           latestType = ''
-        } else if (item.split(' ')[1] === 'O') {
+        } else if (item.split(/\t/g)[1] === 'O') {
           // 无标注
           if (latestTag === 'I') {
-            senWords.push('{"pos":"' + latestWordStart + ',' + senCount + '","word":"' + this.escapeStr(latestWord) + '","type":"' + latestType + '","link":"none"}')
-            latestWord = ''
+            senWords.push('{"p":"' + latestWordStart + ',' + senCount + '","t":' + latestType + ',"l":"-1"}')
             latestWordStart = 0
             latestType = ''
           }
-          sen += item.split(' ')[0]
+          sen += item.split(/\t/g)[0]
           senCount += 1
           latestTag = 'O'
         } else {
           // 有标注
-          var ann = item.split(' ')[1]
+          var ann = item.split(/\t/g)[1]
           var tag = ann.split('-')[0]
           var tp = ann.split('-')[1]
           if (tag === 'B') {
             if (latestTag === 'I') {
-              senWords.push('{"pos":"' + latestWordStart + ',' + senCount + '","word":"' + this.escapeStr(latestWord) + '","type":"' + latestType + '","link":"none"}')
-              latestWord = ''
+              senWords.push('{"p":"' + latestWordStart + ',' + senCount + '","t":' + latestType + ',"l":"-1"}')
               latestWordStart = 0
               latestType = ''
             }
             latestType = tp
             latestWordStart = senCount
           }
-          latestWord += item.split(' ')[0].trim()
-          sen += item.split(' ')[0].trim()
+          sen += item.split(/\t/g)[0].trim()
           senCount += 1
           latestTag = tag
         }
