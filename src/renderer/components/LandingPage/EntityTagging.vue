@@ -21,6 +21,7 @@
       <div>
         <span>当前</span>
         <span class="jump-index" v-if="listLen !== 0">第 <el-input-number class="index-input" v-model="curNum" size="mini" :min="1" :max="listLen" :step="10"></el-input-number> 句&nbsp;&nbsp;共{{listLen}}句</span>
+        <el-button type="danger" icon="el-icon-delete" circle size="mini" @click="delSenDialogVisible = true"></el-button>
         <!--<span v-if="listLen !== 0">（状态：{{senList[curIndex].hasOwnProperty('links') ? '已修改' : '未修改'}}）</span>-->
       </div>
       <el-row class="block sen-block" id="sen-block">
@@ -59,6 +60,13 @@
       <span slot="footer" class="dialog-footer">
         <el-button @click="exportDialogVisible = false">取 消</el-button>
         <el-button type="primary" @click="onExport">确 定</el-button>
+      </span>
+    </el-dialog>
+    <el-dialog title="删除句子" :visible.sync="delSenDialogVisible" width="30%" center>
+      <div>是否删除该句？（保存或者另存后不能撤销）</div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="delSenDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="onDelSen">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -113,7 +121,8 @@ export default {
       fileInfo: {},
       relationTable: [],
       typeTable: [],
-      relationType: []
+      relationType: [],
+      delSenDialogVisible: false
     }
   },
   watch: {
@@ -213,6 +222,11 @@ export default {
     onDelEntity (i) {
       console.log('onDelEntity')
       this.senList[this.curIndex].e.splice(i, 1)
+    },
+    onDelSen () {
+      this.senList.splice(this.curIndex, 1)
+      this.delSenDialogVisible = false
+      this.listLen = this.senList.length
     },
     openFile: function () {
       console.log('open-file-dialog')

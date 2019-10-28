@@ -5,6 +5,7 @@
 
 #### To do list
 - [ ] 添加文件头的自定义修改
+- [ ] 不能反向选择文本的bug
 
 #### Build Setup
 
