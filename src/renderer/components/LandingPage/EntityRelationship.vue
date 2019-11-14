@@ -61,7 +61,7 @@
   </div>
 </template>
 <script>
-import { Message } from 'element-ui'
+// import { Message } from 'element-ui'
 const fs = require('fs')
 const readline = require('readline')
 export default {
@@ -155,12 +155,12 @@ export default {
       this.$electron.ipcRenderer.send('open-file-dialog', this.modelName)
     },
     readFileToArr: (vueThis, fReadName, callback) => {
-      var size = fs.statSync(fReadName).size
-      if (size > 10485760) {
-        Message.warning('打开文件不能超过10MB')
-        vueThis.pageLoading = false
-        return
-      }
+      // var size = fs.statSync(fReadName).size
+      // if (size > 10485760) {
+      //   Message.warning('打开文件不能超过10MB')
+      //   vueThis.pageLoading = false
+      //   return
+      // }
       vueThis.resetPage()
       vueThis.srcFilePath = fReadName
       var fRead = fs.createReadStream(fReadName)
@@ -312,10 +312,11 @@ export default {
           for (var j = 0; j < validEntity[k].length; ++j) {
             var leftNid = validEntity[k][i].nid
             var rightNid = validEntity[k][j].nid
-            if (leftNid === rightNid) {
-              continue
-            }
-            if (i !== j && leftNid !== 'none' && rightNid !== 'none') {
+            // if (leftNid === rightNid) {
+            //   continue
+            // }
+            // if (i !== j && leftNid !== 'none' && rightNid !== 'none') {
+            if (i !== j) {
               pair.push({
                 leftId: validEntity[k][i].id,
                 rightId: validEntity[k][j].id,

@@ -3,7 +3,7 @@
     <el-tabs type="card">
       <el-tab-pane label="默认文件路径">
         <el-card shadow="always">
-          <div class="tips">TIPS：只能上传.na文件，且不超过10MB</div>
+          <!-- <div class="tips">TIPS：只能上传.na文件，且不超过10MB</div> -->
           <div class="block open-block" v-for="(item, i) in titleNames" v-bind:key="i">
             <div class="title">{{ item }}默认文件路径：{{ srcFilePaths[i] ? srcFilePaths[i] : '未设置' }}</div>
             <el-button size="mini" type="primary" @click="openFile(i)">设置</el-button>
