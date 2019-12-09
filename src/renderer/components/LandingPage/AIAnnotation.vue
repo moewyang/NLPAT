@@ -1,43 +1,55 @@
 <template>
   <div class="ai-annotation-page">
     <el-card shadow="always">
-      <el-input type="text" v-model="sentence" clearable>
-        <el-button slot="append" @click="aiTap">AI</el-button>
-      </el-input>
+      <el-input type="textarea" v-model="sentence" :rows="3"></el-input>
+    </el-card>
+    <br>
+    <el-card shadow="always">
+      <span>请选择模式：</span>
+      <el-select v-model="mode">
+        <el-option
+          v-for="(item, index) in modeOptions"
+          :key="index"
+          :label="item.label"
+          :value="item.value"></el-option>
+      </el-select>
+      <el-button @click="aiTap" type="success" :loading="aiBtnStatus" style="float: right;">开始</el-button>
     </el-card>
     <br>
     <el-card shadow="always" v-loading="pageLoading">
-      <p>AI标注结果:</p>
-      <el-row class="block sen-block">
-        <el-col class="sen-wrapper">
-          <el-input type="text" v-if="senDict" class="sen" v-html="color(sentence)"></el-input>
-          <div v-else class="sen">暂无内容</div>
-        </el-col>
-      </el-row>
-      <p>实体信息:</p>
-      <el-form class="block entity-block" ref="form" label-width="40px" label-position="left">
-        <div v-if="senDict">
-          <el-form-item v-for="(item, i) in senDict.entities" v-bind:key="i" label-width="0">
-            <el-badge :value="item.id" type="primary">
-              <el-tag type="primary">{{ item.name }}</el-tag>
+      <p>实体标注结果:</p>
+      <div v-for="(item, index) in senDict" v-bind:key="index">
+        <el-row class="block sen-block">
+          <el-col class="sen-wrapper">
+            <el-input type="text" class="sen" v-html="color(item)"></el-input>
+          </el-col>
+        </el-row>
+        <el-form class="block entity-block" ref="form" label-width="40px" label-position="left">
+          <el-form-item v-for="(it, i) in item.entities" v-bind:key="i" label-width="0">
+            <el-badge :value="it.id" type="primary">
+              <el-tag type="primary">{{ it.mention }}</el-tag>
             </el-badge>
             &nbsp;=>
-            <el-tag type="success">{{ item.type }}</el-tag>
+            <el-tag type="success">{{ it.tag }}</el-tag>
             &nbsp;
-            <el-tag type="warning">{{ item.link }}</el-tag>
+            <el-tag v-if="it.link !== 'nil'" type="warning">{{ it.link }}</el-tag>
             &nbsp;
-            <el-autocomplete :highlight-first-item="true" class="entity-auto-complete" popper-class="entitiy-pull-down" v-model="item.description" :fetch-suggestions="querySearchAsync(item.name, item.link)" placeholder="点击查看歧义实体链接" clearable>
+            <el-autocomplete :highlight-first-item="true" class="entity-auto-complete" popper-class="entitiy-pull-down" v-model="item.description" :fetch-suggestions="querySearchAsync(it.mention, it.link)" placeholder="点击查看歧义实体链接" clearable>
               <template slot-scope="{ item }">
                 <div class="nid">{{ item.neoId }}</div>
                 <span class="ndes">{{ item.description }}</span>
               </template>
             </el-autocomplete>
           </el-form-item>
-        </div>
-      </el-form>
+        </el-form>
+      </div>
+      <!--<div v-else class="sen">暂无内容</div>-->
+    </el-card>
+    <br>
+    <el-card shadow="always" v-loading="pageLoading">
       <p>关系图:</p>
       <el-form class="block graph-block">
-        <div id="echart" style="width: 600px; height: 200px;"></div>
+        <div id="echart" style="width: 600px; height: 900px;"></div>
       </el-form>
     </el-card>
   </div>
@@ -48,7 +60,8 @@ export default {
   data () {
     return {
       modelName: 'aiannotation',
-      sentence: '为什么导演杨洁说《西游记》永远是我心中的一个结一个痛',
+      // sentence: '毛加恩公开高以翔纪念影片满满泪点，绅士王沥川从未离开', 为什么导演杨洁说《西游记》永远是我心中的一个结一个痛
+      sentence: '《心理罪》是由凤凰联动影业和爱奇艺联合出品、根据作家雷米所著的同名系列小说改编而成的犯罪悬疑网络剧，由五百执导，顾小白编剧，陈若轩、付枚、王泷正、温心等联袂主演。中国官方宣布，国务院总理李克强此次出访非洲，夫人程虹随行。《妄想》是香港男歌手张国荣的一首粤语歌曲，由林夕填词，唐奕聪谱曲，张国荣演唱。',
       senDict: null,
       pageLoading: false,
       kgUrl: 'http://localhost:7474/db/data/transaction/commit',
@@ -57,10 +70,28 @@ export default {
       listLen: 0,
       descriptions: [],
       isOnSubmit: false,
-      myChart: null
+      myChart: null,
+      modeOptions: [{
+        value: 'joint',
+        label: '联合抽取'
+      }, {
+        value: 'pipeline',
+        label: '流水线抽取'
+      }],
+      mode: 'joint',
+      aiBtnStatus: false,
+      // aiUrl: 'http://localhost:20006/',
+      aiUrl: 'http://localhost:8000/'
     }
   },
   created () {
+  },
+  watch: {
+    sentence: function (oldValue, newValue) {
+      this.senDict = null
+      this.myChart.dispose()
+      this.myChart = echarts.init(document.getElementById('echart'))
+    }
   },
   mounted () {
     this.myChart = echarts.init(document.getElementById('echart'))
@@ -68,43 +99,55 @@ export default {
   methods: {
     aiTap () {
       this.pageLoading = true
-      // temp
-      clearTimeout(this.timeout)
-      this.timeout = setTimeout(() => {
-        var temp = {
-          string: '为什么导演杨洁说《西游记》永远是我心中的一个结一个痛',
-          entities: [
-            {
-              id: 1,
-              pos: '5,7',
-              name: '杨洁',
-              type: '人物',
-              link: 8890014
-            },
-            {
-              id: 2,
-              pos: '9,12',
-              name: '西游记',
-              type: '影视作品',
-              link: 5407654
-            }
-          ],
-          relations: [
-            {
-              entity1: '9,12',
-              entity2: '5,7',
-              relation: '导演'
-            }
-          ]
-        }
-        this.senDict = temp
-        this.showGraph()
+      this.aiBtnStatus = true
+      // this.$http.get(this.aiUrl + this.mode + '/' + this.sentence).then((response) => {
+      this.$http.get(this.aiUrl + 'api/nlp/ie/?mode=' + this.mode + '&content=' + this.sentence).then((response) => {
+        this.aiBtnStatus = false
+        console.log(response)
+        this.senDict = response.data.results
+        this.showGraph(response.data.graph)
         this.pageLoading = false
-      }, 3000 * Math.random())
+      }).catch((error) => {
+        this.aiBtnStatus = false
+        console.log(error)
+      })
+      // temp
+      // clearTimeout(this.timeout)
+      // this.timeout = setTimeout(() => {
+      //   var temp = {
+      //     string: '为什么导演杨洁说《西游记》永远是我心中的一个结一个痛',
+      //     entities: [
+      //       {
+      //         id: 1,
+      //         pos: '5,7',
+      //         name: '杨洁',
+      //         type: '人物',
+      //         link: 8890014
+      //       },
+      //       {
+      //         id: 2,
+      //         pos: '9,12',
+      //         name: '西游记',
+      //         type: '影视作品',
+      //         link: 5407654
+      //       }
+      //     ],
+      //     relations: [
+      //       {
+      //         entity1: '9,12',
+      //         entity2: '5,7',
+      //         relation: '导演'
+      //       }
+      //     ]
+      //   }
+      //   this.senDict = temp
+      //   this.showGraph()
+      //   this.pageLoading = false
+      // }, 3000 * Math.random())
     },
-    color (sen) {
-      var senArr = sen.split('')
-      var entities = this.senDict.entities
+    color (item) {
+      var senArr = item.sentence.split('')
+      var entities = item.entities
       var startIndexList = entities.map((item) => {
         return item.pos.split(',')[0]
       })
@@ -199,53 +242,78 @@ export default {
         return ((state.description.trim() + state.value.trim()).toLowerCase().indexOf(queryString.trim().toLowerCase()) !== -1)
       }
     },
-    showGraph () {
+    showGraph (graph) {
       // myChart.showLoading()
       var nodes = []
       var links = []
       var categories = []
-      this.senDict.entities.forEach(function (entity) {
-        if (categories.indexOf(entity.type) < 0) {
+      graph.nodes.forEach(function (node) {
+        if (categories.indexOf(node.category) < 0) {
           categories.push({
-            name: entity.type
+            name: node.category
           })
         }
-        entity.category = entity.type
-        entity.symbol = 'circle'
-        entity.symbolSize = 15
-        entity.x = null
-        entity.y = null
-        entity.itemStyle = null
-        entity.label = {
+        node.symbol = 'circle'
+        node.symbolSize = 15
+        node.x = null
+        node.y = null
+        node.itemStyle = null
+        node.label = {
           normal: {
             show: true,
             position: 'right'
           }
         }
-        nodes.push(entity)
+        nodes.push(node)
       })
-      this.senDict.relations.forEach((edge, i) => {
-        var source = this.senDict.entities.filter((item) => {
-          return item.pos === edge.entity1
-        })[0].id
-        var target = this.senDict.entities.filter((item) => {
-          return item.pos === edge.entity2
-        })[0].id
-        links.push({
-          id: i,
-          source: source.toString(),
-          target: target.toString(),
-          name: edge.relation
-        })
+      // this.senDict[0].relations.forEach((edge, i) => {
+      //   var source = this.senDict[0].entities.filter((item) => {
+      //     return item.pos === edge.entity1.pos
+      //   })[0].id
+      //   var target = this.senDict[0].entities.filter((item) => {
+      //     return item.pos === edge.entity2.pos
+      //   })[0].id
+      //   links.push({
+      //     id: i,
+      //     source: source.toString(),
+      //     target: target.toString(),
+      //     name: edge.relation
+      //   })
+      // })
+      graph.links.forEach(function (edge) {
+        links.push(edge)
       })
+      var colorPalette = ['#E01F54', '#001852', '#e05038', '#009966', '#9fa8a3', '#89bdd3', '#e6af4b', '#d3758f']
+      var fontSize = 12
       this.myChart.setOption({
+        color: colorPalette,
+        backgroundColor: 'white',
+        title: {
+          text: '实体关系图',
+          top: '1%',
+          left: '1%',
+          textStyle: {
+            color: '#333333',
+            fontSize: fontSize * 1.8,
+            fontWeight: 'bolder'
+          },
+          subtext: '图中共有 ' + graph.nodes.length + ' 个节点以及 ' + graph.links.length + ' 条关系',
+          subtextStyle: {
+            color: '#333333',
+            fontSize: fontSize,
+            fontWeight: 'bold'
+          }
+        },
         tooltip: {
+          // formatter: function (params) {
+          //   if (params.dataType === 'node') {
+          //     return params.data.mention
+          //   } else {
+          //     return params.data.name
+          //   }
+          // }
           formatter: function (params) {
-            if (params.dataType === 'node') {
-              return params.data.category
-            } else {
-              return params.data.name
-            }
+            return params.data.name
           }
         },
         legend: [{
@@ -284,7 +352,7 @@ export default {
         }],
         textStyle: {
           fontFamily: '微软雅黑',
-          fontSize: 12
+          fontSize: fontSize
         }
       })
     }
@@ -331,6 +399,7 @@ export default {
     border: 1px solid #EEE;
     border-radius: 10px;
     padding: 20px 20px 0 20px;
+    height: 1000px;
   }
 }
 .entitiy-pull-down {
